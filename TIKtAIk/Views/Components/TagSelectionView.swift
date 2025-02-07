@@ -26,73 +26,86 @@ import SwiftUI
 /// - Batch updates
 struct TagSelectionView: View {
     @Binding var selectedTags: Set<String>
-    @State private var viewModel: TagSelectionViewModel
+    @StateObject private var viewModel: TagSelectionViewModel
+    @Environment(\.dismiss) private var dismiss
     
     init(selectedTags: Binding<Set<String>>) {
         self._selectedTags = selectedTags
-        self._viewModel = State(initialValue: TagSelectionViewModel(selectedTags: selectedTags.wrappedValue))
+        self._viewModel = StateObject(wrappedValue: TagSelectionViewModel(selectedTags: selectedTags))
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            selectedTagsSection
-            tagInputSection
-            suggestedTagsSection
-        }
-        .onChange(of: selectedTags) { _, newTags in
-            viewModel.batchUpdateTags(newTags)
-        }
-    }
-    
-    // MARK: - View Sections
-    
-    private var selectedTagsSection: some View {
-        Group {
-            if viewModel.selectedTags.isEmpty {
-                Text("No tags selected")
-                    .foregroundStyle(.secondary)
-            } else {
-                TagFlowLayout(tags: Array(viewModel.selectedTags)) { tag in
-                    viewModel.removeTag(tag)
-                    selectedTags = viewModel.selectedTags
+        VStack(spacing: 16) {
+            // Selected tags
+            FlowLayout(spacing: 8) {
+                ForEach(Array(viewModel.selectedTags), id: \.self) { tag in
+                    TagChip(tag: tag) {
+                        viewModel.removeTag(tag)
+                    }
                 }
             }
-        }
-    }
-    
-    private var tagInputSection: some View {
-        HStack {
-            TextField("Add interests (type to search)", text: $viewModel.newTag)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: viewModel.newTag) { _, query in
-                    viewModel.updateSuggestions(for: query)
-                }
+            .padding(.horizontal)
             
-            if !viewModel.newTag.isEmpty {
+            // Tag input
+            HStack {
+                TextField("Add tag", text: $viewModel.newTag)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit {
+                        viewModel.addTag()
+                    }
+                
                 Button("Add") {
                     viewModel.addTag()
-                    selectedTags = viewModel.selectedTags
                 }
-                .disabled(viewModel.newTag.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(viewModel.newTag.isEmpty)
             }
-        }
-    }
-    
-    private var suggestedTagsSection: some View {
-        Group {
+            .padding(.horizontal)
+            
+            // Suggestions
             if !viewModel.suggestedTags.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(viewModel.suggestedTags, id: \.self) { tag in
-                            SuggestionButton(tag: tag) {
+                            TagChip(tag: tag) {
                                 viewModel.addSuggestedTag(tag)
-                                selectedTags = viewModel.selectedTags
                             }
                         }
                     }
+                    .padding(.horizontal)
                 }
             }
+            
+            // Done button
+            Button("Done") {
+                dismiss()
+            }
+            .buttonStyle(.customPrimary)
+            .padding()
         }
+    }
+}
+
+struct TagChip: View {
+    let tag: String
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(tag)
+                .foregroundStyle(.white)
+            
+            Button {
+                onRemove()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.white.opacity(0.8))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.accentColor)
+        .clipShape(Capsule())
     }
 }
 
@@ -133,17 +146,6 @@ struct TagView: View {
         .padding(.vertical, 4)
         .background(Color(.systemGray6))
         .clipShape(Capsule())
-    }
-}
-
-struct SuggestionButton: View {
-    let tag: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(tag, action: action)
-            .buttonStyle(.bordered)
-            .tint(.blue)
     }
 }
 
@@ -223,4 +225,3 @@ struct FlowLayout: Layout {
         return result
     }
 } 
-

@@ -1,110 +1,131 @@
-# Creator User Stories
+# Creator User Stories - Week 1 Minimum Requirements
 
-## Chef Creator
+## 1. Chef/Food Creator
 
-### Story 1: Recipe Video Upload
-**As a** chef creator,  
-**I want to** upload cooking tutorial videos with recipe details,  
-**So that** I can share my culinary expertise with my audience.
+### Story: Recipe Video Upload
+**As a** food creator,  
+**I want to** upload cooking tutorial videos,  
+**So that** I can share my recipes with my audience.
 
 **Acceptance Criteria:**
-- Can upload HD quality cooking videos (up to 500MB)
-- Can add recipe metadata:
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
   - Recipe title
   - Ingredients list
   - Cooking time
-  - Difficulty level
   - Cuisine type
-  - Dietary tags (vegetarian, vegan, gluten-free, etc.)
 - Can preview video before publishing
 - Can edit metadata after upload
-- Can track views and engagement
-- Can respond to comments and questions
 
-**Technical Requirements:**
-- Video format support: MP4, MOV
-- Video quality: up to 4K
-- Metadata storage in Firestore
-- Analytics tracking
-- Comment system integration
+## 2. Fitness Creator
 
-### Story 2: Recipe Collection Management
-**As a** chef creator,  
-**I want to** organize my cooking videos into collections by cuisine or theme,  
-**So that** viewers can easily find related recipes.
+### Story: Workout Tutorial Upload
+**As a** fitness creator,  
+**I want to** upload exercise tutorials,  
+**So that** I can share workout content.
 
 **Acceptance Criteria:**
-- Can create themed collections (e.g., "Italian Pasta", "Quick Meals")
-- Can add videos to multiple collections
-- Can reorder videos within collections
-- Can edit collection details
-- Can track collection performance
-- Can feature collections on profile
-
-## Exercise Creator
-
-### Story 1: Workout Video Upload
-**As an** exercise creator,  
-**I want to** upload fitness tutorial videos with workout details,  
-**So that** I can guide users through proper exercise techniques.
-
-**Acceptance Criteria:**
-- Can upload HD fitness videos (up to 500MB)
-- Can add workout metadata:
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
   - Exercise name
-  - Difficulty level
   - Target muscle groups
-  - Duration
   - Required equipment
-  - Fitness level tags (beginner, intermediate, advanced)
+  - Duration
 - Can preview video before publishing
 - Can edit metadata after upload
-- Can track viewer completion rates
-- Can address form questions in comments
 
-**Technical Requirements:**
-- Video format support: MP4, MOV
-- Video quality: up to 4K
-- Metadata storage in Firestore
-- Analytics tracking
-- Comment system integration
+## 3. Educational Creator
 
-### Story 2: Workout Program Creation
-**As an** exercise creator,  
-**I want to** organize my fitness videos into structured workout programs,  
-**So that** viewers can follow a progressive training plan.
+### Story: Quick-Learn Video Upload
+**As an** educational creator,  
+**I want to** upload learning content,  
+**So that** I can teach topics effectively.
 
 **Acceptance Criteria:**
-- Can create workout programs (e.g., "30-Day Core Challenge")
-- Can sequence videos in recommended order
-- Can set recommended rest days
-- Can track program completion rates
-- Can update program content
-- Can feature programs on profile
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
+  - Topic title
+  - Subject area
+  - Learning level
+  - Key points
+- Can preview video before publishing
+- Can edit metadata after upload
 
-## Common Requirements
+## 4. Comedy Creator
 
-### Technical Implementation
+### Story: Skit Video Upload
+**As a** comedy creator,  
+**I want to** upload comedy skits,  
+**So that** I can share humorous content.
+
+**Acceptance Criteria:**
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
+  - Skit title
+  - Comedy genre
+  - Content rating
+  - Tags
+- Can preview video before publishing
+- Can edit metadata after upload
+
+## 5. Beauty/Makeup Creator
+
+### Story: Tutorial Video Upload
+**As a** beauty creator,  
+**I want to** upload makeup tutorials,  
+**So that** I can share beauty techniques.
+
+**Acceptance Criteria:**
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
+  - Look title
+  - Skill level
+  - Product list
+  - Technique tags
+- Can preview video before publishing
+- Can edit metadata after upload
+
+## 6. Music Creator
+
+### Story: Performance Video Upload
+**As a** music creator,  
+**I want to** upload music performances,  
+**So that** I can share my musical content.
+
+**Acceptance Criteria:**
+- Can upload videos (up to 500MB)
+- Can add basic metadata:
+  - Song title
+  - Genre
+  - Instruments
+  - Original/Cover tag
+- Can preview video before publishing
+- Can edit metadata after upload
+
+## Technical Requirements
+
+### Infrastructure
 - Firebase Authentication
-- Firestore data storage
 - Cloud Storage for videos
-- Analytics integration
-- Performance monitoring
+- Basic Analytics
 
-### Testing Criteria
-- Unit tests for metadata validation
-- Integration tests for upload flow
-- UI tests for creator interactions
-- Performance tests for video playback
+### Testing Requirements
+- Basic unit tests
+- Basic UI tests
+- Error scenario coverage
 
 ### Security Requirements
-- Secure content storage
-- Creator verification
-- Copyright protection
-- Content moderation tools
+- Basic authentication
+- Secure storage
+- Content moderation
 
 ### Performance Targets
 - Upload time < 3 minutes for 500MB
 - Playback start < 2 seconds
-- Analytics update < 1 minute
-- UI response < 100ms 
+- UI response < 100ms
+
+## Notes
+- Focus on basic video upload
+- Basic metadata management
+- Core error handling
+- Essential security 

@@ -249,4 +249,66 @@ struct Video: Identifiable, Codable {
             allowComments: data["allowComments"] as? Bool ?? true
         )
     }
+    
+    /// Add overload for DocumentSnapshot
+    static func from(_ document: DocumentSnapshot) throws -> Video {
+        guard let data = document.data() else {
+            throw VideoError.invalidData
+        }
+        
+        let metadata = data["metadata"] as? [String: Any] ?? [:]
+        let stats = data["stats"] as? [String: Any] ?? [:]
+        
+        return Video(
+            id: document.documentID,
+            userId: data["userId"] as? String ?? "",
+            title: data["title"] as? String ?? "",
+            description: data["description"] as? String,
+            metadata: VideoMetadata(
+                duration: metadata["duration"] as? Double ?? 0,
+                width: metadata["width"] as? Int ?? 0,
+                height: metadata["height"] as? Int ?? 0,
+                size: metadata["size"] as? Int ?? 0,
+                format: metadata["format"] as? String,
+                resolution: metadata["resolution"] as? String,
+                uploadDate: (metadata["uploadDate"] as? Timestamp)?.dateValue(),
+                lastModified: (metadata["lastModified"] as? Timestamp)?.dateValue()
+            ),
+            stats: Stats(
+                views: stats["views"] as? Int ?? 0,
+                likes: stats["likes"] as? Int ?? 0,
+                shares: stats["shares"] as? Int ?? 0,
+                commentsCount: stats["commentsCount"] as? Int ?? 0
+            ),
+            status: Status(rawValue: data["status"] as? String ?? "") ?? .ready,
+            storageUrl: data["storageUrl"] as? String ?? "",
+            thumbnailUrl: data["thumbnailUrl"] as? String,
+            createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+            updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
+            tags: Set(data["tags"] as? [String] ?? []),
+            isPrivate: data["isPrivate"] as? Bool ?? false,
+            allowComments: data["allowComments"] as? Bool ?? true
+        )
+    }
+}
+
+// Add at the top of the file with other enums
+enum VideoError: LocalizedError {
+    case invalidData
+    case notFound
+    case uploadFailed
+    case updateFailed
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidData:
+            return "Invalid video data"
+        case .notFound:
+            return "Video not found"
+        case .uploadFailed:
+            return "Failed to upload video"
+        case .updateFailed:
+            return "Failed to update video"
+        }
+    }
 } 

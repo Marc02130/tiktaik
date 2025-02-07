@@ -13,16 +13,60 @@
 import AVKit
 import FirebaseStorage
 import Combine
+import FirebaseFirestore
 
+@MainActor
 final class VideoPlayerViewModel: ObservableObject {
     /// Current video player instance
-    @Published private(set) var player: AVPlayer?
+    @Published var player: AVPlayer?
     /// Current error message if any
     @Published private(set) var error: String?
     /// Loading state
     @Published private(set) var isLoading = false
     
+    @Published var isLiked = false
+    @Published var likes = 0
+    @Published var comments = 0
+    @Published var shares = 0
+    
     private let cache = VideoCache.shared
+    private let video: Video
+    
+    init(video: Video) {
+        self.video = video
+        self.likes = video.stats.likes
+        self.comments = video.stats.commentsCount
+        self.shares = video.stats.shares
+        
+        if let url = URL(string: video.storageUrl) {
+            self.player = AVPlayer(url: url)
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(videoDidFinish),
+                name: .AVPlayerItemDidPlayToEndTime,
+                object: player?.currentItem
+            )
+        }
+        
+        // Fix actor isolation with @MainActor.run
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("StopVideo"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let videoId = notification.userInfo?["videoId"] as? String,
+               videoId == self?.video.id {
+                Task { @MainActor in
+                    self?.stopPlayback()
+                }
+            }
+        }
+    }
+    
+    @objc private func videoDidFinish() {
+        print("DEBUG: Video finished playing, sending advance notification")
+        NotificationCenter.default.post(name: .advanceToNextVideo, object: nil)
+    }
     
     /// Loads video from Firebase Storage
     /// - Parameter video: Video to load
@@ -73,4 +117,54 @@ final class VideoPlayerViewModel: ObservableObject {
         player?.pause()
         player = nil
     }
-} 
+    
+    func startPlayback() {
+        player?.play()
+    }
+    
+    func stopPlayback() {
+        player?.pause()
+    }
+    
+    @MainActor
+    func toggleLike() {
+        isLiked.toggle()
+        Task {
+            do {
+                let db = Firestore.firestore()
+                try await db.collection(Video.collectionName)
+                    .document(video.id)
+                    .updateData([
+                        "stats.likes": FieldValue.increment(Int64(isLiked ? 1 : -1))
+                    ] as [String: Any])
+            } catch {
+                print("Error updating like:", error)
+                isLiked.toggle()
+            }
+        }
+    }
+    
+    @MainActor
+    func incrementViews() {
+        Task {
+            do {
+                let db = Firestore.firestore()
+                try await db.collection(Video.collectionName)
+                    .document(video.id)
+                    .updateData([
+                        "stats.views": FieldValue.increment(Int64(1))
+                    ] as [String: Any])
+            } catch {
+                print("Error incrementing views:", error)
+            }
+        }
+    }
+    
+    func showComments() {
+        // Implement comments functionality
+    }
+    
+    func shareVideo() {
+        // Implement share functionality
+    }
+}

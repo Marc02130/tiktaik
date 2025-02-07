@@ -54,6 +54,15 @@ struct EditProfileView: View {
                     Toggle("Enable Notifications", isOn: $viewModel.notificationsEnabled)
                     Toggle("Allow Comments", isOn: $viewModel.allowComments)
                 }
+                
+                Section("Feed Preferences") {
+                    Toggle("Creator Mode", isOn: $viewModel.isCreator)
+                        .onChange(of: viewModel.isCreator) { oldValue, newValue in
+                            Task {
+                                await viewModel.updateCreatorStatus(isCreator: newValue)
+                            }
+                        }
+                }
             }
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
@@ -66,7 +75,7 @@ struct EditProfileView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         Task {
-                            await viewModel.saveChanges()
+                            await viewModel.saveChanges(authViewModel)
                             dismiss()
                         }
                     }
@@ -86,6 +95,7 @@ final class EditProfileViewModel: ObservableObject {
     @Published var notificationsEnabled: Bool
     @Published var allowComments: Bool
     @Published private(set) var isSaving = false
+    @Published var isCreator: Bool
     
     private let profile: UserProfile
     
@@ -97,9 +107,11 @@ final class EditProfileViewModel: ObservableObject {
         self.isPrivate = profile.settings.isPrivate
         self.notificationsEnabled = profile.settings.notificationsEnabled
         self.allowComments = profile.settings.allowComments
+        self.isCreator = profile.isCreator
     }
     
-    func saveChanges() async {
+    @MainActor
+    func saveChanges(_ authViewModel: AuthViewModel) async {
         isSaving = true
         defer { isSaving = false }
         
@@ -118,7 +130,8 @@ final class EditProfileViewModel: ObservableObject {
             ),
             createdAt: profile.createdAt,
             updatedAt: Date(),
-            interests: profile.interests  // Keep existing interests
+            interests: profile.interests,
+            isCreator: isCreator
         )
         
         do {
@@ -126,9 +139,16 @@ final class EditProfileViewModel: ObservableObject {
                 .collection(UserProfile.collectionName)
                 .document(profile.id)
                 .setData(updatedProfile.asDictionary)
+                
+            // After successful save, reload the profile
+            await authViewModel.loadUserProfile()
         } catch {
             print("Failed to save profile:", error)
         }
+    }
+    
+    func updateCreatorStatus(isCreator: Bool) async {
+        // Implementation of updateCreatorStatus function
     }
 }
 
@@ -153,7 +173,8 @@ final class EditProfileViewModel: ObservableObject {
             ),
             createdAt: Date(),
             updatedAt: Date(),
-            interests: ["coding", "swiftui", "ios"]  // Add sample interests
+            interests: ["coding", "swiftui", "ios"],  // Add sample interests
+            isCreator: false  // Add isCreator parameter
         ))
         .environmentObject(AuthViewModel())
     }

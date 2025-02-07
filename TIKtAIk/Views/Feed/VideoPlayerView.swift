@@ -13,125 +13,97 @@
 import SwiftUI
 import AVKit
 import Foundation
+import FirebaseFirestore
 
 // Define notification name using NSNotification.Name
 extension NSNotification.Name {
     static let advanceToNextVideo = NSNotification.Name("AdvanceToNextVideo")
+    static let stopVideo = NSNotification.Name("StopVideo")
 }
 
 struct VideoPlayerView: View {
-    @StateObject private var viewModel = VideoPlayerViewModel()
     let video: Video
-    @State private var isMuted = true
-    @Environment(\.verticalSizeClass) var verticalSizeClass
-    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @StateObject private var viewModel: VideoPlayerViewModel
+    @State private var creatorUsername: String = ""
+    
+    init(video: Video) {
+        self.video = video
+        self._viewModel = StateObject(wrappedValue: VideoPlayerViewModel(video: video))
+    }
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Video Player
-                if let player = viewModel.player {
-                    VideoPlayer(player: player)
-                        .edgesIgnoringSafeArea(.all)
-                        .frame(
-                            width: geometry.size.height,
-                            height: geometry.size.width
-                        )
-                        .position(
-                            x: geometry.size.width / 2,
-                            y: geometry.size.height / 2
-                        )
-                        .onAppear {
-                            player.isMuted = isMuted
-                            player.play()
-                            
-                            // Add observer for video completion
-                            NotificationCenter.default.addObserver(
-                                forName: .AVPlayerItemDidPlayToEndTime,
-                                object: player.currentItem,
-                                queue: .main
-                            ) { _ in
-                                NotificationCenter.default.post(
-                                    name: .advanceToNextVideo,
-                                    object: nil
-                                )
-                            }
-                        }
-                } else {
-                    // Loading placeholder
-                    Color.black
-                        .overlay {
-                            ProgressView()
-                                .tint(.white)
-                        }
-                }
+                VideoPlayer(player: viewModel.player)
+                    .edgesIgnoringSafeArea(.all)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
                 
-                // Video Controls - Match video rotation
+                // Overlay Controls
                 VStack {
                     Spacer()
-                    HStack {
-                        videoInfo
+                    
+                    // Video Info
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(video.title)
+                                .font(.headline)
+                            Text(creatorUsername.isEmpty ? "@\(video.userId)" : "@\(creatorUsername)")
+                                .font(.subheadline)
+                        }
+                        .foregroundColor(.white)
+                        .shadow(radius: 2)
+                        
                         Spacer()
-                        videoControls
+                        
+                        // Interaction Buttons
+                        VStack(spacing: 16) {
+                            InteractionButton(
+                                icon: "heart.fill",
+                                count: viewModel.likes,
+                                isActive: viewModel.isLiked,
+                                action: viewModel.toggleLike
+                            )
+                            
+                            InteractionButton(
+                                icon: "message.fill",
+                                count: viewModel.comments,
+                                action: viewModel.showComments
+                            )
+                            
+                            InteractionButton(
+                                icon: "square.and.arrow.up.fill",
+                                count: viewModel.shares,
+                                action: viewModel.shareVideo
+                            )
+                        }
                     }
                     .padding()
                 }
-                .rotationEffect(.degrees(-90))  // Match video rotation
-                .frame(
-                    width: geometry.size.height,
-                    height: geometry.size.width
-                )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                print("DEBUG: VideoPlayerView appeared for video:", video.id)
+                viewModel.startPlayback()
+                viewModel.incrementViews()
+                fetchUsername()
+            }
+            .onDisappear {
+                viewModel.stopPlayback()
+            }
         }
-        .accessibilityElement(children: .contain)
-        .onTapGesture {
-            isMuted.toggle()
-            viewModel.player?.isMuted = isMuted
-        }
-        .task {
-            await viewModel.loadVideo(video)
-        }
-        .onDisappear {
-            viewModel.cleanup()
-        }
+        .aspectRatio(9/16, contentMode: .fit)
     }
     
-    private var videoInfo: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(video.title)
-                .font(.headline)
-                .foregroundStyle(.white)
-                .shadow(radius: 2)
-            
-            if let description = video.description {
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.white)
-                    .shadow(radius: 2)
-            }
-            
-            HStack {
-                ForEach(Array(video.tags.prefix(3)), id: \.self) { tag in
-                    Text("#\(tag)")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
-                        .shadow(radius: 2)
-                }
-            }
-        }
-    }
-    
-    private var videoControls: some View {
-        VStack(spacing: 16) {
-            Button {
-                isMuted.toggle()
-                viewModel.player?.isMuted = isMuted
-            } label: {
-                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.title2)
-                    .foregroundStyle(.white)
-                    .shadow(radius: 2)
+    private func fetchUsername() {
+        Task {
+            do {
+                let doc = try await Firestore.firestore()
+                    .collection("users")
+                    .document(video.userId)
+                    .getDocument()
+                creatorUsername = doc.get("username") as? String ?? ""
+            } catch {
+                print("Error fetching username:", error)
             }
         }
     }

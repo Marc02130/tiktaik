@@ -172,27 +172,14 @@ struct ProfileView: View {
             EditProfileView(profile: profile)
         }
         .sheet(isPresented: $showingTagEditor) {
-            NavigationStack {
-                TagSelectionView(selectedTags: .init(
-                    get: { profile.interests },
-                    set: { newTags in
-                        Task {
-                            await authViewModel.updateInterests(Array(newTags))
-                        }
-                    }
-                ))
-                .padding()
-                .navigationTitle("Edit Interests")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") {
-                            showingTagEditor = false
-                        }
+            TagSelectionView(selectedTags: .init(
+                get: { Set(profile.interests) },
+                set: { newTags in
+                    Task {
+                        await authViewModel.updateInterests(newTags)
                     }
                 }
-            }
-            .presentationDetents([.medium])
+            ))
         }
     }
 }

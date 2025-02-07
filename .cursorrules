@@ -86,6 +86,9 @@ When generating code, finding bugs, or optimizing SwiftUI projects, follow these
   
 - Document any persistent debug code with clear explanations of why it's needed.
 
+## 10. IDs
+- Do not use creatorId. Always use userId. Creator is a property of a user.
+
 # File Organization
 /TIKtAIk
 ├── App/

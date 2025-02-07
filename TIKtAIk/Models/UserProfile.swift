@@ -14,7 +14,7 @@ import Foundation
 import FirebaseFirestore
 
 /// User profile data model
-struct UserProfile: Codable, Identifiable {
+struct UserProfile: Identifiable, Codable {
     /// Firebase user ID
     let id: String
     /// User's email address
@@ -36,7 +36,9 @@ struct UserProfile: Codable, Identifiable {
     /// Last update timestamp
     var updatedAt: Date
     /// User's content interests/tags
-    var interests: Set<String>
+    var interests: [String]
+    /// Indicates whether the user is a creator
+    var isCreator: Bool
     
     /// Types of user accounts
     enum UserType: String, Codable, CaseIterable {
@@ -57,6 +59,15 @@ struct UserProfile: Codable, Identifiable {
             self.videosCount = videosCount
             self.likesCount = likesCount
         }
+        
+        var asDictionary: [String: Any] {
+            [
+                "followersCount": followersCount,
+                "followingCount": followingCount,
+                "videosCount": videosCount,
+                "likesCount": likesCount
+            ]
+        }
     }
     
     /// User settings
@@ -69,6 +80,14 @@ struct UserProfile: Codable, Identifiable {
             self.isPrivate = isPrivate
             self.notificationsEnabled = notificationsEnabled
             self.allowComments = allowComments
+        }
+        
+        var asDictionary: [String: Any] {
+            [
+                "isPrivate": isPrivate,
+                "notificationsEnabled": notificationsEnabled,
+                "allowComments": allowComments
+            ]
         }
     }
     
@@ -84,20 +103,12 @@ struct UserProfile: Codable, Identifiable {
             "userType": userType.rawValue,
             "bio": bio as Any,
             "avatarUrl": avatarUrl as Any,
-            "stats": [
-                "followersCount": stats.followersCount,
-                "followingCount": stats.followingCount,
-                "videosCount": stats.videosCount,
-                "likesCount": stats.likesCount
-            ],
-            "settings": [
-                "isPrivate": settings.isPrivate,
-                "notificationsEnabled": settings.notificationsEnabled,
-                "allowComments": settings.allowComments
-            ],
+            "stats": stats.asDictionary,
+            "settings": settings.asDictionary,
             "createdAt": Timestamp(date: createdAt),
             "updatedAt": Timestamp(date: updatedAt),
-            "interests": Array(interests)
+            "interests": interests,
+            "isCreator": isCreator
         ]
     }
     
@@ -131,7 +142,8 @@ struct UserProfile: Codable, Identifiable {
             ),
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
-            interests: Set((data["interests"] as? [String]) ?? [])
+            interests: data["interests"] as? [String] ?? [],
+            isCreator: data["isCreator"] as? Bool ?? false
         )
     }
 } 

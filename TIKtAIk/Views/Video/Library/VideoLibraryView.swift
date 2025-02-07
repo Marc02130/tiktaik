@@ -48,6 +48,7 @@ struct VideoLibraryView: View {
         }
         .sheet(item: $viewModel.selectedVideo) { video in
             VideoEditView(videoId: video.id, refreshTrigger: refreshTrigger)
+                .environmentObject(viewModel)
         }
         .task {
             await viewModel.loadVideos()

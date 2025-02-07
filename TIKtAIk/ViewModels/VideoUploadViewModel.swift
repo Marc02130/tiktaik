@@ -467,4 +467,8 @@ final class VideoUploadViewModel: ObservableObject {
             lastModified: Date()
         )
     }
+    
+    func updateTags(_ tags: Set<String>) {
+        selectedTags = tags
+    }
 } 

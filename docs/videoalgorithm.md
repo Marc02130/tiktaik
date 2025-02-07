@@ -1,80 +1,88 @@
-# Feed Algorithm Technical Requirements - Week 1
+# Feed Algorithm Requirements - Week 1 Minimum
 
 ## Overview
-Basic algorithm to populate video feed based on following status, tags, and a toggle for creator-only content.
+Basic feed population based on user profile type and preferences.
 
-## Functional Requirements
+## Feed Types
 
-### Feed Types
-- **Main Feed**
-  - Following-based content
-  - Tag-based recommendations
-  - Toggle for creator-only view
+### Creator Feed Algorithm
+```swift
+struct CreatorFeedQuery {
+    let userId: String
+    let limit: Int
+    let lastVideo: Video?
+}
+```
 
-### Creator-Only Toggle
-- **Personal Content View**
-  - Switch to view only own content
-  - Sorted by upload date
-  - Include private videos
+### Consumer Feed Algorithm
+```swift
+struct ConsumerFeedQuery {
+    let userId: String
+    let followingOnly: Bool
+    let selectedTags: [String]
+    let limit: Int
+    let lastVideo: Video?
+}
+```
 
-## Technical Implementation
+## Implementation
 
 ### Data Models
 ```swift
 struct FeedConfiguration {
-    var isCreatorOnly: Bool
-    var followingOnly: Bool
-    var selectedTags: Set<String>
-}
-
-struct FeedQuery {
-    let limit: Int
-    let lastVideo: Video?
-    let config: FeedConfiguration
-}
-
-struct VideoMetadata {
-    let id: String
-    let tags: Set<String>
-    let uploadDate: Date
-    let isPrivate: Bool
-    var viewCount: Int
+    let userProfile: UserProfile
+    let limit: Int = 10
+    
+    var feedQuery: Any {
+        switch userProfile {
+        case .creator:
+            return CreatorFeedQuery(
+                userId: userId,
+                limit: limit,
+                lastVideo: nil
+            )
+        case .consumer(let preferences):
+            return ConsumerFeedQuery(
+                userId: userId,
+                followingOnly: preferences.followingOnly,
+                selectedTags: preferences.selectedTags,
+                limit: limit,
+                lastVideo: nil
+            )
+        }
+    }
 }
 ```
 
+## Query Rules
+1. Creator Profile:
+   - Filter: userId matches current user
+   - Sort: by uploadDate descending
+   - Limit: 10 videos per fetch
+
+2. Consumer Profile:
+   - Filter: followingOnly OR selectedTags
+   - Sort: by uploadDate descending
+   - Limit: 10 videos per fetch
 
 ## Performance Requirements
-
-### Query Optimization
-- Limit: 10 videos per fetch
-- Pagination using cursor
-- Cache query results
-- Preload next batch
-
-### Response Times
 - Initial load: < 1 second
-- Subsequent loads: < 500ms
-- Smooth scrolling: No jank
+- Pagination: < 500ms
+- Cache results
 
 ## Error Handling
-- Network connectivity
-- Empty results
-- Invalid queries
-- Rate limiting
+```swift
+enum AlgorithmError: Error {
+    case invalidQuery
+    case noResults
+    case fetchFailed
+}
+```
 
 ## Testing Requirements
-
-### Unit Tests
-- Scoring algorithm
 - Query generation
 - Filter logic
-- Sort ordering
-
-### Integration Tests
-- Data fetching
-- Feed population
-- Toggle functionality
-- Pagination
+- Basic pagination
 
 ## Dependencies
 - Firebase Firestore

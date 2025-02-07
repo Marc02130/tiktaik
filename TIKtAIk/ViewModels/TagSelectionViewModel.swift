@@ -1,9 +1,10 @@
 import SwiftUI
 
-@Observable final class TagSelectionViewModel {
-    private(set) var selectedTags: Set<String>
-    var newTag: String = ""
-    private(set) var suggestedTags: [String] = []
+final class TagSelectionViewModel: ObservableObject {
+    @Published private(set) var selectedTags: Set<String>
+    @Published var newTag: String = ""
+    @Published private(set) var suggestedTags: [String] = []
+    private var updateParent: (Set<String>) -> Void
     
     private let commonTags = [
         "comedy", "dance", "music", "food", "travel", 
@@ -12,8 +13,9 @@ import SwiftUI
         "cooking", "diy", "nature", "science", "business"
     ]
     
-    init(selectedTags: Set<String>) {
-        self.selectedTags = selectedTags
+    init(selectedTags: Binding<Set<String>>) {
+        self.selectedTags = selectedTags.wrappedValue
+        self.updateParent = { selectedTags.wrappedValue = $0 }
     }
     
     func updateSuggestions(for query: String) {
@@ -34,6 +36,7 @@ import SwiftUI
         let tag = newTag.lowercased().trimmingCharacters(in: .whitespaces)
         if !tag.isEmpty {
             selectedTags.insert(tag)
+            updateParent(selectedTags)
             newTag = ""
             suggestedTags = []
         }
@@ -41,15 +44,18 @@ import SwiftUI
     
     func addSuggestedTag(_ tag: String) {
         selectedTags.insert(tag)
+        updateParent(selectedTags)
         newTag = ""
         suggestedTags = []
     }
     
     func removeTag(_ tag: String) {
         selectedTags.remove(tag)
+        updateParent(selectedTags)
     }
     
     func batchUpdateTags(_ tags: Set<String>) {
         selectedTags = tags
+        updateParent(tags)
     }
 } 

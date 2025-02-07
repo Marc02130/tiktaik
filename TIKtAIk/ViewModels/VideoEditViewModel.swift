@@ -30,15 +30,15 @@ final class VideoEditViewModel: ObservableObject {
     /// ID of video being edited
     let videoId: String
     /// Video title
-    @Published var title = ""
+    @Published var title: String = ""
     /// Video description
-    @Published var description = ""
+    @Published var description: String = ""
     /// Comma-separated tags
-    @Published var tags = ""
+    @Published private(set) var selectedTags: Set<String> = []
     /// Whether video is private
-    @Published var isPrivate = false
+    @Published var isPrivate: Bool = false
     /// Whether comments are allowed
-    @Published var allowComments = true
+    @Published var allowComments: Bool = true
     /// Video URL for playback
     @Published var videoURL: String?
     /// Video player instance
@@ -74,33 +74,30 @@ final class VideoEditViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            let documentRef = Firestore.firestore()
+            let doc = try await Firestore.firestore()
                 .collection(Video.collectionName)
                 .document(videoId)
+                .getDocument()
             
-            let document = try await documentRef.getDocument()
-            guard document.exists else {
-                throw NSError(domain: "VideoEdit", code: -1, userInfo: [
-                    NSLocalizedDescriptionKey: "Video not found"
-                ])
+            guard let video = try? Video.from(doc) else {
+                error = "Failed to load video"
+                return
             }
             
-            // Use Firestore's built-in decoder
-            let video = try document.data(as: Video.self, decoder: Firestore.Decoder())
-            
-            self.title = video.title
-            self.description = video.description ?? ""
-            self.tags = video.tags.joined(separator: ", ")
-            self.isPrivate = video.isPrivate
-            self.allowComments = video.allowComments
-            self.videoURL = video.storageUrl
+            await MainActor.run {
+                self.title = video.title
+                self.description = video.description ?? ""
+                self.isPrivate = video.isPrivate
+                self.allowComments = video.allowComments
+                self.selectedTags = Set(video.tags)
+                self.videoURL = video.storageUrl
+            }
             
             if let url = URL(string: video.storageUrl) {
                 self.player = AVPlayer(url: url)
             }
         } catch {
             self.error = error.localizedDescription
-            print("Failed to load video:", error)
         }
     }
     
@@ -180,7 +177,7 @@ final class VideoEditViewModel: ObservableObject {
                 "isPrivate": isPrivate,
                 "allowComments": allowComments,
                 "updatedAt": Timestamp(date: Date()),
-                "tags": Set(tags.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }),
+                "tags": Array(selectedTags),
                 "metadata": [
                     "lastModified": Timestamp(date: Date())
                 ]
@@ -202,6 +199,10 @@ final class VideoEditViewModel: ObservableObject {
                 self.error = "Failed to save changes: \(error.localizedDescription)"
             }
         }
+    }
+    
+    func updateTags(_ newTags: Set<String>) {
+        selectedTags = newTags
     }
 }
 

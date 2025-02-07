@@ -61,41 +61,38 @@ import SwiftUI // For pow() function
     
     /// Fetches videos for creator-only mode
     private func fetchCreatorVideos(_ query: FeedQuery) async throws -> [Video] {
-        #if DEBUG
-        print("Fetching creator videos for userId:", query.config.userId)
+        let videosRef = Firestore.firestore().collection(Video.collectionName)
         
-        // Debug: Print all videos in collection
-        let allVideos = try await db.collection(Video.collectionName).getDocuments()
-        print("Total videos in collection:", allVideos.documents.count)
-        allVideos.documents.forEach { doc in
-            let data = doc.data()
-            print("Video document:")
-            print("- id:", doc.documentID)
-            print("- userId:", data["userId"] as? String ?? "nil")
-            print("- title:", data["title"] as? String ?? "nil")
+        var queryRef: Query = videosRef
+        
+        if query.config.isCreatorOnly {
+            print("DEBUG: Applying creator filter for userId:", query.config.userId)
+            // Only show videos from this creator
+            queryRef = queryRef.whereField("userId", isEqualTo: query.config.userId)
+        } else {
+            // Show videos from all creators
+            queryRef = queryRef.whereField("isCreator", isEqualTo: true)
         }
-        #endif
         
-        // Query by userId (not creatorId)
-        var videosRef = db.collection(Video.collectionName)
-            .whereField("userId", isEqualTo: query.config.userId)
+        queryRef = queryRef
             .order(by: "createdAt", descending: true)
             .limit(to: query.limit)
         
-        if let lastVideo = query.lastVideo {
-            videosRef = videosRef.start(after: [lastVideo.createdAt])
+        let snapshot = try await queryRef.getDocuments()
+        print("DEBUG: Found \(snapshot.documents.count) documents")
+        
+        let videos = try snapshot.documents.compactMap { doc -> Video? in
+            do {
+                let video = try Video.from(doc)
+                print("DEBUG: Decoded video:", video.id)
+                return video
+            } catch {
+                print("DEBUG: Failed to decode video from doc:", doc.documentID, error)
+                return nil
+            }
         }
         
-        let snapshot = try await videosRef.getDocuments()
-        let videos = try snapshot.documents.map { try Video.from($0) }
-        
-        #if DEBUG
-        print("Found \(videos.count) videos for creator")
-        videos.forEach { video in
-            print("Video: \(video.id), title: \(video.title), userId: \(video.userId)")
-        }
-        #endif
-        
+        print("DEBUG: Returning \(videos.count) videos")
         return videos
     }
     
@@ -126,36 +123,89 @@ import SwiftUI // For pow() function
     
     /// Fetches mixed feed with scoring
     private func fetchMixedFeed(_ query: FeedQuery) async throws -> [Video] {
-        // Fetch recent videos
+        guard let userId = auth.currentUser?.uid else {
+            throw FeedError.notAuthenticated
+        }
+        
+        // Get user's interests and followed creators
+        let followedCreators = try await fetchFollowedCreators(userId: userId)
+        let userProfile = try await fetchUserProfile(userId: userId)
+        let userInterests = Set(userProfile?.interests ?? [])
+        
+        // Base query for public videos
         var videosRef = db.collection(Video.collectionName)
             .whereField("isPrivate", isEqualTo: false)
-            .order(by: "createdAt", descending: true)
-            .limit(to: query.limit * 2)
         
-        if let lastVideo = query.lastVideo {
-            videosRef = videosRef.start(after: [lastVideo.createdAt])
+        // If user has interests, prioritize matching videos
+        if !userInterests.isEmpty {
+            // Firebase doesn't support array contains any directly with multiple conditions
+            // So we'll fetch more videos and filter in memory
+            videosRef = videosRef
+                .order(by: "createdAt", descending: true)
+                .limit(to: query.limit * 3)
+        } else {
+            videosRef = videosRef
+                .order(by: "createdAt", descending: true)
+                .limit(to: query.limit)
         }
         
         let snapshot = try await videosRef.getDocuments()
-        let videos = try snapshot.documents.map { try Video.from($0) }
+        var videos = try snapshot.documents.map { try Video.from($0) }
         
-        // Get user context once for all videos
-        let followedCreators = try await fetchFollowedCreators(userId: query.config.userId)
-        let videoStats = try await fetchUserVideoStats(userId: query.config.userId)
-        let userContext = UserContext(
-            userId: query.config.userId,
-            followedCreators: followedCreators,
-            preferredTags: query.config.selectedTags,
-            videoStats: videoStats
-        )
-        
-        // Score and sort videos
-        let scoredVideos = videos.sorted { video1, video2 in
-            VideoRanking.calculateScore(video: video1, userContext: userContext) >
-            VideoRanking.calculateScore(video: video2, userContext: userContext)
+        // Score videos based on:
+        // 1. Matching interests (tags)
+        // 2. From followed creators
+        // 3. Recency
+        videos.sort { video1, video2 in
+            let score1 = calculateVideoScore(
+                video: video1,
+                userInterests: userInterests,
+                followedCreators: followedCreators
+            )
+            let score2 = calculateVideoScore(
+                video: video2,
+                userInterests: userInterests,
+                followedCreators: followedCreators
+            )
+            return score1 > score2
         }
         
-        return Array(scoredVideos.prefix(query.limit))
+        // Return top videos after scoring
+        return Array(videos.prefix(query.limit))
+    }
+    
+    private func calculateVideoScore(
+        video: Video,
+        userInterests: Set<String>,
+        followedCreators: Set<String>
+    ) -> Double {
+        var score = 1.0
+        
+        // Interest match bonus (2x per matching tag)
+        let matchingTags = Set(video.tags).intersection(userInterests)
+        if !matchingTags.isEmpty {
+            score *= Double(matchingTags.count) * 2.0
+        }
+        
+        // Following bonus (1.5x)
+        if followedCreators.contains(video.userId) {
+            score *= 1.5
+        }
+        
+        // Recency bonus (max 1.3x, decreasing over 7 days)
+        let ageInHours = -video.createdAt.timeIntervalSinceNow / 3600
+        let recencyMultiplier = max(1.0, 1.3 - (ageInHours / (24 * 7)))
+        score *= recencyMultiplier
+        
+        return score
+    }
+    
+    private func fetchUserProfile(userId: String) async throws -> UserProfile? {
+        let doc = try await db.collection(UserProfile.collectionName)
+            .document(userId)
+            .getDocument()
+        
+        return try? UserProfile.from(doc)
     }
     
     /// Fetches user context for video scoring
@@ -242,103 +292,18 @@ import SwiftUI // For pow() function
     
     /// Fetches user's preferred tags based on view history
     private func fetchUserPreferredTags(userId: String) async throws -> Set<String> {
-        let viewsRef = db.collection("videoViews")
-            .whereField("userId", isEqualTo: userId)
-            .order(by: "timestamp", descending: true)
+        // Query videos collection directly and sort by views
+        let videosRef = db.collection(Video.collectionName)
+            .order(by: "stats.views", descending: true)
             .limit(to: 50)
         
-        let viewsSnapshot = try await viewsRef.getDocuments()
-        let videoIds = viewsSnapshot.documents.compactMap { $0.get("videoId") as? String }
-        
-        // Get videos and their tags
-        let videos = try await withThrowingTaskGroup(of: Video.self) { group in
-            for videoId in videoIds {
-                group.addTask {
-                    let doc = try await self.db.collection(Video.collectionName)
-                        .document(videoId)
-                        .getDocument()
-                    guard let data = doc.data() else {
-                        throw FeedError.invalidQuery
-                    }
-                    
-                    return Video(
-                        id: doc.documentID,
-                        userId: data["userId"] as? String ?? "",
-                        title: data["title"] as? String ?? "",
-                        description: data["description"] as? String,
-                        metadata: self.parseVideoMetadata(data),
-                        stats: Video.Stats(
-                            views: data["stats.views"] as? Int ?? 0,
-                            likes: data["stats.likes"] as? Int ?? 0,
-                            shares: data["stats.shares"] as? Int ?? 0,
-                            commentsCount: data["stats.commentsCount"] as? Int ?? 0
-                        ),
-                        status: Video.Status(rawValue: data["status"] as? String ?? "") ?? .ready,
-                        storageUrl: data["storageUrl"] as? String ?? "",
-                        thumbnailUrl: data["thumbnailUrl"] as? String,
-                        createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                        updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
-                        tags: Set(data["tags"] as? [String] ?? []),
-                        isPrivate: data["isPrivate"] as? Bool ?? false,
-                        allowComments: data["allowComments"] as? Bool ?? true
-                    )
-                }
-            }
-            
-            var result: [Video] = []
-            for try await video in group {
-                result.append(video)
-            }
-            return result
+        let snapshot = try await videosRef.getDocuments()
+        let videos = try snapshot.documents.compactMap { doc in
+            try doc.data(as: Video.self)
         }
         
-        // Count tag frequencies
-        var tagFrequencies: [String: Int] = [:]
-        for video in videos {
-            for tag in video.tags {
-                tagFrequencies[tag, default: 0] += 1
-            }
-        }
-        
-        return Set(tagFrequencies.sorted { $0.value > $1.value }
-            .prefix(10)
-            .map { $0.key })
-    }
-    
-    /// Calculates video score based on multiple factors
-    private func calculateVideoScore(
-        uploadDate: Date,
-        isFollowing: Bool,
-        matchingTags: Int,
-        stats: Video.Stats
-    ) -> Double {
-        var score = 1.0
-        
-        // Recency boost (max 2.0)
-        let hoursSinceUpload = -uploadDate.timeIntervalSinceNow / 3600
-        let recencyScore = max(0, 2.0 - (hoursSinceUpload / 24))
-        score *= recencyScore
-        
-        // Following boost (1.5x)
-        if isFollowing {
-            score *= 1.5
-        }
-        
-        // Tag matching boost (1.2x per tag)
-        if matchingTags > 0 {
-            score *= pow(1.2, Double(matchingTags))
-        }
-        
-        // Engagement boost
-        let viewScore = log10(Double(stats.views + 1))
-        let likeScore = log10(Double(stats.likes + 1)) * 2
-        let commentScore = log10(Double(stats.commentsCount + 1)) * 1.5
-        let shareScore = log10(Double(stats.shares + 1)) * 3
-        
-        let engagementScore = 1.0 + (viewScore + likeScore + commentScore + shareScore) / 10
-        score *= engagementScore
-        
-        return score
+        // Extract tags from most viewed videos
+        return Set(videos.flatMap { $0.tags })
     }
     
     private func fetchFollowedCreators(userId: String) async throws -> Set<String> {
@@ -360,6 +325,40 @@ import SwiftUI // For pow() function
             uploadDate: (metadata["uploadDate"] as? Timestamp)?.dateValue(),
             lastModified: (metadata["lastModified"] as? Timestamp)?.dateValue()
         )
+    }
+    
+    func fetchFeed(query: FeedQuery) async throws -> [Video] {
+        print("DEBUG: FeedService - Fetching feed")
+        print("DEBUG: Query config:", query.config)
+        
+        let videosRef = db.collection(Video.collectionName)
+        var queryRef: Query = videosRef
+        
+        if query.config.isCreatorOnly {
+            print("DEBUG: Applying creator filter for userId:", query.config.userId)
+            queryRef = queryRef.whereField("userId", isEqualTo: query.config.userId)
+        }
+        
+        queryRef = queryRef
+            .order(by: "createdAt", descending: true)
+            .limit(to: query.limit)
+        
+        let snapshot = try await queryRef.getDocuments()
+        print("DEBUG: Found \(snapshot.documents.count) documents")
+        
+        let videos = try snapshot.documents.compactMap { doc -> Video? in
+            do {
+                let video = try doc.data(as: Video.self)
+                print("DEBUG: Decoded video:", video.id)
+                return video
+            } catch {
+                print("DEBUG: Failed to decode video from doc:", doc.documentID, error)
+                return nil
+            }
+        }
+        
+        print("DEBUG: Returning \(videos.count) videos")
+        return videos
     }
 }
 

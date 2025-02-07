@@ -57,7 +57,8 @@ final class ProfileViewModel: ObservableObject {
         }
     }
     
-    /// Updates user interests
+    /// Updates user interests/tags
+    /// - Parameter interests: New interests/tags
     func updateInterests(_ interests: Set<String>) async {
         guard let profile = userProfile else { return }
         isLoading = true
@@ -74,7 +75,8 @@ final class ProfileViewModel: ObservableObject {
             settings: profile.settings,
             createdAt: profile.createdAt,
             updatedAt: Date(),
-            interests: interests
+            interests: Array(interests), // Convert Set to Array for storage
+            isCreator: profile.isCreator // Keep existing creator status
         )
         
         await updateProfile(updatedProfile)

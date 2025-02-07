@@ -28,114 +28,170 @@ struct VideoEditView: View {
     /// Environment dismiss action
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focusedField: Field?
+    @State private var showTagSelection = false
     
     // Define fields that can have focus
     private enum Field {
         case title
         case description
-        case tags
     }
     
     /// Initializes view with video ID and refresh trigger
     /// - Parameter videoId: Unique identifier of video to edit
     /// - Parameter refreshTrigger: Trigger for refreshing video data
     init(videoId: String, refreshTrigger: RefreshTrigger) {
-        _viewModel = StateObject(wrappedValue: VideoEditViewModel(videoId: videoId, refreshTrigger: refreshTrigger))
+        let vm = VideoEditViewModel(videoId: videoId, refreshTrigger: refreshTrigger)
+        _viewModel = StateObject(wrappedValue: vm)
     }
     
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.isLoading {
-                    ProgressView("Loading video details...")
-                } else {
-                    Form {
-                        Section("Video Details") {
-                            TextField("Title", text: $viewModel.title)
-                                .focused($focusedField, equals: .title)
-                                .textInputAutocapitalization(.words)
-                            
-                            TextField("Description", text: $viewModel.description, axis: .vertical)
-                                .focused($focusedField, equals: .description)
-                                .lineLimit(3...6)
-                            
-                            TextField("Tags (comma separated)", text: $viewModel.tags)
-                                .focused($focusedField, equals: .tags)
-                                .autocorrectionDisabled()
-                        }
-                        
-                        Section("Privacy") {
-                            Toggle("Private Video", isOn: $viewModel.isPrivate)
-                            Toggle("Allow Comments", isOn: $viewModel.allowComments)
-                        }
-                        
-                        Section("Thumbnail") {
-                            if let thumbnails = viewModel.thumbnails {
-                                ThumbnailSelectionView(
-                                    selectedIndex: $viewModel.selectedThumbnailIndex,
-                                    thumbnails: thumbnails
-                                )
-                            } else {
-                                ProgressView("Generating thumbnails...")
-                            }
-                        }
-                        
-                        if let player = viewModel.player {
-                            Section("Preview") {
-                                VideoPlayer(player: player)
-                                    .frame(height: 200)
-                                    .onDisappear {
-                                        player.pause()
-                                    }
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Edit Video")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        Task {
-                            await viewModel.saveChanges()
-                            if viewModel.error == nil {
-                                dismiss()
-                            }
-                        }
-                    }
-                    .disabled(viewModel.isSaving || viewModel.isLoading)
-                }
-                
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") {
-                        focusedField = nil
-                    }
-                }
-            }
-        }
-        .alert(
-            "Error",
-            isPresented: Binding(
-                get: { viewModel.error != nil },
-                set: { if !$0 { viewModel.clearError() } }
-            )
-        ) {
-            Button("OK") {
-                viewModel.clearError()
-            }
-        } message: {
-            if let error = viewModel.error {
-                Text(error)
-            }
+            content
+                .navigationTitle("Edit Video")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { toolbarContent }
+                .sheet(isPresented: $showTagSelection) { tagSelectionSheet }
+                .alert("Error", isPresented: errorBinding) { errorAlert }
         }
         .task {
             await viewModel.loadVideo()
             await viewModel.generateThumbnails()
+        }
+    }
+    
+    private var content: some View {
+        Group {
+            if viewModel.isLoading {
+                ProgressView("Loading video details...")
+            } else {
+                Form {
+                    videoDetailsSection
+                    tagsSection
+                    privacySection
+                    thumbnailSection
+                }
+            }
+        }
+    }
+    
+    private var videoDetailsSection: some View {
+        Section("Video Details") {
+            TextField("Title", text: $viewModel.title)
+                .focused($focusedField, equals: .title)
+                .textInputAutocapitalization(.words)
+            
+            TextField("Description", text: $viewModel.description, axis: .vertical)
+                .focused($focusedField, equals: .description)
+                .lineLimit(3...6)
+        }
+    }
+    
+    private var tagsSection: some View {
+        Section("Tags") {
+            if viewModel.selectedTags.isEmpty {
+                Text("No tags")
+                    .foregroundStyle(.secondary)
+            } else {
+                TagsDisplay(tags: Array(viewModel.selectedTags))
+            }
+            
+            Button("Edit Tags") {
+                showTagSelection = true
+            }
+        }
+    }
+    
+    private var privacySection: some View {
+        Section("Privacy") {
+            Toggle("Private Video", isOn: $viewModel.isPrivate)
+            Toggle("Allow Comments", isOn: $viewModel.allowComments)
+        }
+    }
+    
+    private var thumbnailSection: some View {
+        Section("Thumbnail") {
+            if let thumbnails = viewModel.thumbnails {
+                ThumbnailSelectionView(
+                    selectedIndex: $viewModel.selectedThumbnailIndex,
+                    thumbnails: thumbnails
+                )
+            } else {
+                ProgressView("Generating thumbnails...")
+            }
+        }
+    }
+    
+    private var toolbarContent: some ToolbarContent {
+        Group {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    Task {
+                        await viewModel.saveChanges()
+                        if viewModel.error == nil {
+                            dismiss()
+                        }
+                    }
+                }
+                .disabled(viewModel.isSaving || viewModel.isLoading)
+            }
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focusedField = nil
+                }
+            }
+        }
+    }
+    
+    private var tagSelectionSheet: some View {
+        NavigationView {
+            TagSelectionView(selectedTags: Binding(
+                get: { viewModel.selectedTags },
+                set: { viewModel.updateTags($0) }
+            ))
+            .navigationTitle("Edit Tags")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        showTagSelection = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.error != nil },
+            set: { if !$0 { viewModel.clearError() } }
+        )
+    }
+    
+    private var errorAlert: some View {
+        Button("OK") { 
+            viewModel.clearError() 
+        }
+    }
+}
+
+// MARK: - Supporting Views
+struct TagsDisplay: View {
+    let tags: [String]
+    
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(tags, id: \.self) { tag in
+                Text(tag)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor.opacity(0.2))
+                    .foregroundColor(.accentColor)
+                    .clipShape(Capsule())
+            }
         }
     }
 }

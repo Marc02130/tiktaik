@@ -31,12 +31,18 @@ final class FeedViewModel: ObservableObject {
     private var currentQuery: FeedQuery?
     
     @Published var videos: [Video] = []
-    @Published var config: FeedConfiguration
+    @Published var config: FeedConfiguration = FeedConfiguration(
+        userId: Auth.auth().currentUser?.uid ?? "",
+        isCreatorOnly: false,
+        followingOnly: false,
+        selectedTags: []
+    )
     
     @Published private(set) var isLoading = false
     @Published private(set) var error: String?
     
     private var isLoadingMore = false
+    private var isUpdating = false  // Add state update lock
     
     init() {
         // Initialize with current user's ID for creator mode
@@ -84,6 +90,10 @@ final class FeedViewModel: ObservableObject {
     }
     
     func loadMore() async {
+        guard !isUpdating else { return }
+        isUpdating = true
+        defer { isUpdating = false }
+        
         // Prevent multiple simultaneous loadMore calls
         guard !isLoadingMore,
               case .loaded(let videos) = state,
@@ -111,15 +121,32 @@ final class FeedViewModel: ObservableObject {
     }
     
     func loadInitialFeed() async {
-        // Don't reload if already loading or loaded
-        guard case .idle = state else { return }
+        print("DEBUG: Starting initial feed load")
+        print("DEBUG: Creator mode:", config.isCreatorOnly)
+        print("DEBUG: User ID:", config.userId)
+        state = .loading
         
-        let query = FeedQuery(
-            limit: 10,
-            lastVideo: nil,
-            config: config
-        )
-        loadFeed(query: query)
+        do {
+            let query = FeedQuery(limit: 10, lastVideo: nil, config: config)
+            print("DEBUG: Fetching feed with query:", query)
+            let videos = try await feedService.fetchFeed(query: query)
+            print("DEBUG: Raw fetched videos count:", videos.count)
+            
+            if videos.isEmpty {
+                state = .error("No videos found")
+                print("DEBUG: No videos found")
+            } else {
+                state = .loaded(videos)
+                print("DEBUG: Feed loaded with \(videos.count) videos")
+                // Print video IDs for debugging
+                videos.forEach { video in
+                    print("DEBUG: Loaded video ID:", video.id)
+                }
+            }
+        } catch {
+            print("DEBUG: Feed load error:", error)
+            state = .error(error.localizedDescription)
+        }
     }
     
     /// Updates feed type and refreshes content

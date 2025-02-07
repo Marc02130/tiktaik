@@ -136,7 +136,8 @@ final class AuthViewModel: ObservableObject {
             settings: UserProfile.UserSettings(),
             createdAt: Date(),
             updatedAt: Date(),
-            interests: []  // Add empty interests array
+            interests: [],  // Empty array for new users
+            isCreator: false  // Default to non-creator
         )
         
         try await Firestore.firestore()
@@ -229,12 +230,23 @@ final class AuthViewModel: ObservableObject {
         }
     }
     
-    /// Updates user interests
-    /// - Parameter interests: New interests array
-    func updateInterests(_ interests: [String]) async {
+    /// Updates user interests/tags
+    /// - Parameter tags: New tags array
+    func updateInterests(_ tags: Set<String>) async {
         guard var updatedProfile = userProfile else { return }
-        updatedProfile.interests = Set(interests)
-        await updateProfile(updatedProfile)
+        updatedProfile.interests = Array(tags)
+        
+        do {
+            try await Firestore.firestore()
+                .collection(UserProfile.collectionName)
+                .document(updatedProfile.id)
+                .setData(updatedProfile.asDictionary)
+            
+            self.userProfile = updatedProfile
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
     }
     
     // Make loadUserProfile public
