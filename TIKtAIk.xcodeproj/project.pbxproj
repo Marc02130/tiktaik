@@ -1,0 +1,747 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4C4571822D52F36400427895 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571812D52F36400427895 /* FirebaseAuth */; };
+		4C4571842D52F36400427895 /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571832D52F36400427895 /* FirebaseAuthCombine-Community */; };
+		4C4571862D52F36400427895 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571852D52F36400427895 /* FirebaseCore */; };
+		4C4571882D52F36400427895 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571872D52F36400427895 /* FirebaseDatabase */; };
+		4C45718A2D52F36400427895 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571892D52F36400427895 /* FirebaseFirestore */; };
+		4C45718C2D52F36400427895 /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 4C45718B2D52F36400427895 /* FirebaseFirestoreCombine-Community */; };
+		4C45718E2D52F36400427895 /* FirebaseFunctionsCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 4C45718D2D52F36400427895 /* FirebaseFunctionsCombine-Community */; };
+		4C4571902D52F36400427895 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 4C45718F2D52F36400427895 /* FirebaseStorage */; };
+		4C4571922D52F36400427895 /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4571912D52F36400427895 /* FirebaseStorageCombine-Community */; };
+		4C4FF4272D55B22F006D4222 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4FF4262D55B22F006D4222 /* FirebaseFirestore */; };
+		4C4FF4292D55B22F006D4222 /* FirebaseFirestoreCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4FF4282D55B22F006D4222 /* FirebaseFirestoreCombine-Community */; };
+		4C636D122D52B29F007DDB7E /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 4C636D112D52B29F007DDB7E /* FirebaseAnalytics */; };
+		4C636D142D52B29F007DDB7E /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = 4C636D132D52B29F007DDB7E /* FirebaseAnalyticsOnDeviceConversion */; };
+		4C636D162D52B29F007DDB7E /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 4C636D152D52B29F007DDB7E /* FirebaseAppCheck */; };
+		4C636D182D52B29F007DDB7E /* FirebaseAppDistribution-Beta in Frameworks */ = {isa = PBXBuildFile; productRef = 4C636D172D52B29F007DDB7E /* FirebaseAppDistribution-Beta */; };
+		4CAF86D42D5550B000340765 /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = 4CAF86D32D5550B000340765 /* FirebasePerformance */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4C636CF42D52B27E007DDB7E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4C636CD82D52B27D007DDB7E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4C636CDF2D52B27D007DDB7E;
+			remoteInfo = TIKtAIk;
+		};
+		4C636CFE2D52B27E007DDB7E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4C636CD82D52B27D007DDB7E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4C636CDF2D52B27D007DDB7E;
+			remoteInfo = TIKtAIk;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		4C4572CF2D53033A00427895 /* TIKtAIk.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TIKtAIk.xctestplan; sourceTree = "<group>"; };
+		4C636CE02D52B27D007DDB7E /* TIKtAIk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TIKtAIk.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C636CF32D52B27E007DDB7E /* TIKtAIkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TIKtAIkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4C636CFD2D52B27E007DDB7E /* TIKtAIkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TIKtAIkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4C45759E2D5323B400427895 /* Exceptions for "TIKtAIk" folder in "TIKtAIk" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Supporting Files/Info.plist",
+			);
+			target = 4C636CDF2D52B27D007DDB7E /* TIKtAIk */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		4C636CE22D52B27D007DDB7E /* TIKtAIk */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4C45759E2D5323B400427895 /* Exceptions for "TIKtAIk" folder in "TIKtAIk" target */,
+			);
+			path = TIKtAIk;
+			sourceTree = "<group>";
+		};
+		4C636CF62D52B27E007DDB7E /* TIKtAIkTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TIKtAIkTests;
+			sourceTree = "<group>";
+		};
+		4C636D002D52B27E007DDB7E /* TIKtAIkUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TIKtAIkUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4C636CDD2D52B27D007DDB7E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4CAF86D42D5550B000340765 /* FirebasePerformance in Frameworks */,
+				4C636D122D52B29F007DDB7E /* FirebaseAnalytics in Frameworks */,
+				4C4571842D52F36400427895 /* FirebaseAuthCombine-Community in Frameworks */,
+				4C4571822D52F36400427895 /* FirebaseAuth in Frameworks */,
+				4C4571922D52F36400427895 /* FirebaseStorageCombine-Community in Frameworks */,
+				4C45718C2D52F36400427895 /* FirebaseFirestoreCombine-Community in Frameworks */,
+				4C636D162D52B29F007DDB7E /* FirebaseAppCheck in Frameworks */,
+				4C4571902D52F36400427895 /* FirebaseStorage in Frameworks */,
+				4C4FF4272D55B22F006D4222 /* FirebaseFirestore in Frameworks */,
+				4C4FF4292D55B22F006D4222 /* FirebaseFirestoreCombine-Community in Frameworks */,
+				4C4571862D52F36400427895 /* FirebaseCore in Frameworks */,
+				4C45718A2D52F36400427895 /* FirebaseFirestore in Frameworks */,
+				4C636D142D52B29F007DDB7E /* FirebaseAnalyticsOnDeviceConversion in Frameworks */,
+				4C4571882D52F36400427895 /* FirebaseDatabase in Frameworks */,
+				4C45718E2D52F36400427895 /* FirebaseFunctionsCombine-Community in Frameworks */,
+				4C636D182D52B29F007DDB7E /* FirebaseAppDistribution-Beta in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CF02D52B27E007DDB7E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CFA2D52B27E007DDB7E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4C636CD72D52B27D007DDB7E = {
+			isa = PBXGroup;
+			children = (
+				4C4572CF2D53033A00427895 /* TIKtAIk.xctestplan */,
+				4C636CE22D52B27D007DDB7E /* TIKtAIk */,
+				4C636CF62D52B27E007DDB7E /* TIKtAIkTests */,
+				4C636D002D52B27E007DDB7E /* TIKtAIkUITests */,
+				4C636CE12D52B27D007DDB7E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4C636CE12D52B27D007DDB7E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4C636CE02D52B27D007DDB7E /* TIKtAIk.app */,
+				4C636CF32D52B27E007DDB7E /* TIKtAIkTests.xctest */,
+				4C636CFD2D52B27E007DDB7E /* TIKtAIkUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		4C636CDF2D52B27D007DDB7E /* TIKtAIk */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C636D072D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIk" */;
+			buildPhases = (
+				4C636CDC2D52B27D007DDB7E /* Sources */,
+				4C636CDD2D52B27D007DDB7E /* Frameworks */,
+				4C636CDE2D52B27D007DDB7E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				4C636CE22D52B27D007DDB7E /* TIKtAIk */,
+			);
+			name = TIKtAIk;
+			packageProductDependencies = (
+				4C636D112D52B29F007DDB7E /* FirebaseAnalytics */,
+				4C636D132D52B29F007DDB7E /* FirebaseAnalyticsOnDeviceConversion */,
+				4C636D152D52B29F007DDB7E /* FirebaseAppCheck */,
+				4C636D172D52B29F007DDB7E /* FirebaseAppDistribution-Beta */,
+				4C4571812D52F36400427895 /* FirebaseAuth */,
+				4C4571832D52F36400427895 /* FirebaseAuthCombine-Community */,
+				4C4571852D52F36400427895 /* FirebaseCore */,
+				4C4571872D52F36400427895 /* FirebaseDatabase */,
+				4C4571892D52F36400427895 /* FirebaseFirestore */,
+				4C45718B2D52F36400427895 /* FirebaseFirestoreCombine-Community */,
+				4C45718D2D52F36400427895 /* FirebaseFunctionsCombine-Community */,
+				4C45718F2D52F36400427895 /* FirebaseStorage */,
+				4C4571912D52F36400427895 /* FirebaseStorageCombine-Community */,
+				4CAF86D32D5550B000340765 /* FirebasePerformance */,
+				4C4FF4262D55B22F006D4222 /* FirebaseFirestore */,
+				4C4FF4282D55B22F006D4222 /* FirebaseFirestoreCombine-Community */,
+			);
+			productName = TIKtAIk;
+			productReference = 4C636CE02D52B27D007DDB7E /* TIKtAIk.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4C636CF22D52B27E007DDB7E /* TIKtAIkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C636D0A2D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIkTests" */;
+			buildPhases = (
+				4C636CEF2D52B27E007DDB7E /* Sources */,
+				4C636CF02D52B27E007DDB7E /* Frameworks */,
+				4C636CF12D52B27E007DDB7E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4C636CF52D52B27E007DDB7E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4C636CF62D52B27E007DDB7E /* TIKtAIkTests */,
+			);
+			name = TIKtAIkTests;
+			packageProductDependencies = (
+			);
+			productName = TIKtAIkTests;
+			productReference = 4C636CF32D52B27E007DDB7E /* TIKtAIkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		4C636CFC2D52B27E007DDB7E /* TIKtAIkUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4C636D0D2D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIkUITests" */;
+			buildPhases = (
+				4C636CF92D52B27E007DDB7E /* Sources */,
+				4C636CFA2D52B27E007DDB7E /* Frameworks */,
+				4C636CFB2D52B27E007DDB7E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4C636CFF2D52B27E007DDB7E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4C636D002D52B27E007DDB7E /* TIKtAIkUITests */,
+			);
+			name = TIKtAIkUITests;
+			packageProductDependencies = (
+			);
+			productName = TIKtAIkUITests;
+			productReference = 4C636CFD2D52B27E007DDB7E /* TIKtAIkUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4C636CD82D52B27D007DDB7E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					4C636CDF2D52B27D007DDB7E = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					4C636CF22D52B27E007DDB7E = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 4C636CDF2D52B27D007DDB7E;
+					};
+					4C636CFC2D52B27E007DDB7E = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 4C636CDF2D52B27D007DDB7E;
+					};
+				};
+			};
+			buildConfigurationList = 4C636CDB2D52B27D007DDB7E /* Build configuration list for PBXProject "TIKtAIk" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 4C636CD72D52B27D007DDB7E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4C636CE12D52B27D007DDB7E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4C636CDF2D52B27D007DDB7E /* TIKtAIk */,
+				4C636CF22D52B27E007DDB7E /* TIKtAIkTests */,
+				4C636CFC2D52B27E007DDB7E /* TIKtAIkUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4C636CDE2D52B27D007DDB7E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CF12D52B27E007DDB7E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CFB2D52B27E007DDB7E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4C636CDC2D52B27D007DDB7E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CEF2D52B27E007DDB7E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4C636CF92D52B27E007DDB7E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		4C636CF52D52B27E007DDB7E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4C636CDF2D52B27D007DDB7E /* TIKtAIk */;
+			targetProxy = 4C636CF42D52B27E007DDB7E /* PBXContainerItemProxy */;
+		};
+		4C636CFF2D52B27E007DDB7E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4C636CDF2D52B27D007DDB7E /* TIKtAIk */;
+			targetProxy = 4C636CFE2D52B27E007DDB7E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4C636D052D52B27E007DDB7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		4C636D062D52B27E007DDB7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		4C636D082D52B27E007DDB7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TIKtAIk/TIKtAIk.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TIKtAIk/Preview Content\"";
+				DEVELOPMENT_TEAM = LA76H3S958;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "TIKtAIk/Supporting Files/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mb.tiktaik;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Debug;
+		};
+		4C636D092D52B27E007DDB7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TIKtAIk/TIKtAIk.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"TIKtAIk/Preview Content\"";
+				DEVELOPMENT_TEAM = LA76H3S958;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "TIKtAIk/Supporting Files/Info.plist";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mb.tiktaik;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Release;
+		};
+		4C636D0B2D52B27E007DDB7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marc.TIKtAIkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TIKtAIk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TIKtAIk";
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Debug;
+		};
+		4C636D0C2D52B27E007DDB7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marc.TIKtAIkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TIKtAIk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TIKtAIk";
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Release;
+		};
+		4C636D0E2D52B27E007DDB7E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marc.TIKtAIkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = TIKtAIk;
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Debug;
+		};
+		4C636D0F2D52B27E007DDB7E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.marc.TIKtAIkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_TARGET_NAME = TIKtAIk;
+				XROS_DEPLOYMENT_TARGET = 2.2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4C636CDB2D52B27D007DDB7E /* Build configuration list for PBXProject "TIKtAIk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C636D052D52B27E007DDB7E /* Debug */,
+				4C636D062D52B27E007DDB7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C636D072D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C636D082D52B27E007DDB7E /* Debug */,
+				4C636D092D52B27E007DDB7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C636D0A2D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C636D0B2D52B27E007DDB7E /* Debug */,
+				4C636D0C2D52B27E007DDB7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4C636D0D2D52B27E007DDB7E /* Build configuration list for PBXNativeTarget "TIKtAIkUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4C636D0E2D52B27E007DDB7E /* Debug */,
+				4C636D0F2D52B27E007DDB7E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4C4571812D52F36400427895 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseAuth;
+		};
+		4C4571832D52F36400427895 /* FirebaseAuthCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		4C4571852D52F36400427895 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseCore;
+		};
+		4C4571872D52F36400427895 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseDatabase;
+		};
+		4C4571892D52F36400427895 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseFirestore;
+		};
+		4C45718B2D52F36400427895 /* FirebaseFirestoreCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "FirebaseFirestoreCombine-Community";
+		};
+		4C45718D2D52F36400427895 /* FirebaseFunctionsCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "FirebaseFunctionsCombine-Community";
+		};
+		4C45718F2D52F36400427895 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseStorage;
+		};
+		4C4571912D52F36400427895 /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "FirebaseStorageCombine-Community";
+		};
+		4C4FF4262D55B22F006D4222 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebaseFirestore;
+		};
+		4C4FF4282D55B22F006D4222 /* FirebaseFirestoreCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = "FirebaseFirestoreCombine-Community";
+		};
+		4C636D112D52B29F007DDB7E /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		4C636D132D52B29F007DDB7E /* FirebaseAnalyticsOnDeviceConversion */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsOnDeviceConversion;
+		};
+		4C636D152D52B29F007DDB7E /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		4C636D172D52B29F007DDB7E /* FirebaseAppDistribution-Beta */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C636D102D52B29F007DDB7E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAppDistribution-Beta";
+		};
+		4CAF86D32D5550B000340765 /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FirebasePerformance;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4C636CD82D52B27D007DDB7E /* Project object */;
+}

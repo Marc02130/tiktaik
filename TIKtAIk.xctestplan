@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "327A3C49-5D6D-4F79-B4B7-E0DFFDC44B24",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:TIKtAIk.xcodeproj",
+      "identifier" : "4C636CDF2D52B27D007DDB7E",
+      "name" : "TIKtAIk"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:TIKtAIk.xcodeproj",
+        "identifier" : "4C636CF22D52B27E007DDB7E",
+        "name" : "TIKtAIkTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:TIKtAIk.xcodeproj",
+        "identifier" : "4C636CFC2D52B27E007DDB7E",
+        "name" : "TIKtAIkUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,0 +1,18 @@
+//
+// TestConfig.xcconfig
+// TIKtAIk
+//
+// Created: 2024-02-14
+// Last modified: 2024-02-14
+//
+// Author: Assistant
+// Copyright © 2024 TIKtAIk. All rights reserved.
+//
+
+// Firebase Test Configuration
+FIREBASE_TEST_APP_ID = 1:123456789:ios:abcdef123456789
+FIREBASE_TEST_API_KEY = AIza000000000000000000000000000000000000
+FIREBASE_TEST_PROJECT_ID = test-project-id
+FIREBASE_TEST_STORAGE_BUCKET = test-project-id.appspot.com
+FIREBASE_TEST_GCM_SENDER_ID = 123456789
+FIREBASE_TEST_CLIENT_ID = 123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com 
