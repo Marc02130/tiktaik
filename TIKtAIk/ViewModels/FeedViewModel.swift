@@ -44,6 +44,8 @@ final class FeedViewModel: ObservableObject {
     private var isLoadingMore = false
     private var isUpdating = false  // Add state update lock
     
+    @Published private(set) var currentVideoId: String?
+    
     init() {
         // Initialize with current user's ID for creator mode
         self.config = FeedConfiguration(
@@ -173,5 +175,25 @@ final class FeedViewModel: ObservableObject {
         
         // Could be used for tag recommendations
         print("Popular tags:", topTags)
+    }
+    
+    /// Preloads the next video in the feed
+    private func preloadNextVideo() {
+        guard let currentIndex = videos.firstIndex(where: { $0.id == currentVideoId }),
+              currentIndex + 1 < videos.count else {
+            return
+        }
+        
+        let nextVideo = videos[currentIndex + 1]
+        let preloadViewModel = VideoPlayerViewModel(video: nextVideo)
+        Task {
+            await preloadViewModel.preloadVideo()
+        }
+    }
+    
+    /// Called when a video starts playing
+    func videoStartedPlaying(_ videoId: String) {
+        currentVideoId = videoId
+        preloadNextVideo()
     }
 } 

@@ -1,7 +1,86 @@
-# Video Upload Technical Requirements
+# Video Upload Requirements - Week 1 Minimum
 
 ## Overview
-The video upload feature allows users to select, preview, and upload videos with metadata. This document outlines the technical requirements and implementation details.
+Basic video upload functionality for creators.
+
+## Upload Flow
+1. Select video from library
+2. Generate thumbnails
+3. Add metadata (title, description, tags)
+4. Upload to Firebase Storage
+5. Create video document in Firestore
+
+## Technical Implementation
+
+### Storage Path Format
+```swift
+// Storage paths must follow this format:
+"videos/{videoId}.{extension}"  // e.g. "videos/ABC123.mp4"
+
+// Do not store full download URLs
+// ❌ Wrong: "https://firebasestorage.googleapis.com/..."
+// ✅ Correct: "videos/ABC123.mp4"
+```
+
+### Video Document Creation
+```swift
+struct Video: Identifiable, Codable {
+    let id: String
+    let userId: String  // Not creatorId
+    let title: String
+    let description: String?
+    let metadata: VideoMetadata
+    let stats: Stats
+    let status: VideoStatus
+    let storageUrl: String  // Storage path only
+    let thumbnailUrl: String?
+    let createdAt: Date
+    let updatedAt: Date
+    let tags: Set<String>
+    let isPrivate: Bool
+    let allowComments: Bool
+}
+
+struct VideoMetadata: Codable {
+    let duration: Double
+    let width: Int
+    let height: Int
+    let size: Int
+    let format: String
+    let resolution: String?
+    let uploadDate: Date
+    let lastModified: Date
+}
+```
+
+### Upload Process
+1. Generate UUID for video
+2. Upload to Firebase Storage using storage path format
+3. Create video document with storage path
+4. Update status as processing completes
+
+## Error Handling
+```swift
+enum UploadError: LocalizedError {
+    case invalidVideo
+    case fileTooLarge
+    case invalidFormat
+}
+```
+
+## Validation
+- File size < 500MB
+- Supported formats: mp4, mov
+- Required fields: title, userId
+- Valid storage path format
+
+## Testing Requirements
+- Video selection
+- Metadata extraction
+- Upload progress
+- Error handling
+- Storage path format
+- Document creation
 
 ## Functional Requirements
 
@@ -41,111 +120,6 @@ The video upload feature allows users to select, preview, and upload videos with
   - Error handling
   - Auto-retry on failure
 
-## Technical Implementation
-
-### SwiftUI Structure
-```swift
-struct VideoUploadView: View {
-    @StateObject private var viewModel = VideoUploadViewModel()
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                videoSelectionSection
-                metadataSection
-                privacySection
-                uploadButton
-            }
-            .navigationTitle("Upload Video")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-}
-```
-
-### View Model
-```swift
-@MainActor
-final class VideoUploadViewModel: ObservableObject {
-    // Video Selection
-    @Published var selectedItem: PhotosPickerItem?
-    @Published private(set) var selectedVideoURL: URL?
-    
-    // Upload State
-    @Published private(set) var isUploading = false
-    @Published private(set) var uploadProgress: Double = 0
-    @Published private(set) var uploadStatus = ""
-    @Published private(set) var error: String?
-    
-    // Metadata
-    @Published var title = ""
-    @Published var description = ""
-    @Published var tags = ""
-    @Published var isPrivate = false
-    @Published var allowComments = true
-    
-    // Thumbnails
-    @Published private(set) var thumbnails: [UIImage]?
-    @Published var selectedThumbnailIndex: Int = 0
-    
-    func uploadVideo() async {
-        // Implementation details...
-    }
-}
-```
-
-## Upload Process Flow
-
-1. **Video Selection**
-   ```swift
-   private func loadVideo(from item: PhotosPickerItem) async {
-       // Load and validate video
-   }
-   ```
-
-2. **Validation**
-   ```swift
-   private func validateVideo(at url: URL) async throws {
-       // Check size and format
-   }
-   ```
-
-3. **Thumbnail Generation**
-   ```swift
-   func generateThumbnails() async {
-       // Generate preview thumbnails
-   }
-   ```
-
-4. **Upload Process**
-   ```swift
-   // 1. Upload video file
-   let videoRef = storageRef.child("videos/\(videoId).mp4")
-   
-   // 2. Upload selected thumbnail
-   let thumbnailRef = storageRef.child("thumbnails/\(videoId).jpg")
-   
-   // 3. Create Firestore document
-   let video = Video(...)
-   ```
-
-## Error Handling
-- **Input Validation**
-  - File size exceeded
-  - Invalid format
-  - Missing required fields
-  
-- **Upload Errors**
-  - Network failures
-  - Storage quota exceeded
-  - Authentication errors
-  - Permission denied
-
 ## State Management
 - **Upload Progress**
   ```swift
@@ -161,17 +135,6 @@ final class VideoUploadViewModel: ObservableObject {
   - Thumbnail generation < 2 seconds
   - Upload start < 1 second
   - Progress updates every 100ms
-
-## Testing Requirements
-- **Unit Tests**
-  - File validation
-  - Metadata validation
-  - Error handling
-  
-- **Integration Tests**
-  - Upload flow
-  - Firebase integration
-  - Progress tracking
 
 ## Security Requirements
 - **Authentication**

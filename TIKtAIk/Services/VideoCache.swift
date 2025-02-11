@@ -17,17 +17,17 @@ final class VideoCache {
     static let shared = VideoCache()
     private var urlCache: [String: URL] = [:]
     private var playerCache: [String: AVPlayer] = [:]
-    private let maxCacheSize = 5
+    private let maxCacheSize = 50
     
     private init() {}
     
-    func cacheURL(id: String, url: URL) {
+    func cacheURL(_ url: URL, for videoId: String) {
+        urlCache[videoId] = url
         cleanCacheIfNeeded()
-        urlCache[id] = url
     }
     
-    func getCachedURL(for id: String) -> URL? {
-        urlCache[id]
+    func getCachedURL(for videoId: String) -> URL? {
+        urlCache[videoId]
     }
     
     func cachePlayer(id: String, player: AVPlayer) {

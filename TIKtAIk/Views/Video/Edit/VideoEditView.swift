@@ -23,53 +23,114 @@ import AVKit
 /// - Update privacy settings
 /// - Preview video content
 struct VideoEditView: View {
-    /// View model managing video edit operations
-    @StateObject private var viewModel: VideoEditViewModel
-    /// Environment dismiss action
+    @StateObject var viewModel: VideoEditViewModel
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var focusedField: Field?
     @State private var showTagSelection = false
-    
-    // Define fields that can have focus
-    private enum Field {
-        case title
-        case description
-    }
-    
-    /// Initializes view with video ID and refresh trigger
-    /// - Parameter videoId: Unique identifier of video to edit
-    /// - Parameter refreshTrigger: Trigger for refreshing video data
-    init(videoId: String, refreshTrigger: RefreshTrigger) {
-        let vm = VideoEditViewModel(videoId: videoId, refreshTrigger: refreshTrigger)
-        _viewModel = StateObject(wrappedValue: vm)
-    }
+    @State private var showTrimView = false
+    @State private var showCropView = false
+    @State private var showThumbnailView = false
+    @State private var isPlaying = false
+    @State private var isMuted = false
+    @State private var showError = false
+    @State private var errorMessage: String?
     
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle("Edit Video")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarContent }
-                .sheet(isPresented: $showTagSelection) { tagSelectionSheet }
-                .alert("Error", isPresented: errorBinding) { errorAlert }
-        }
-        .task {
-            await viewModel.loadVideo()
-            await viewModel.generateThumbnails()
+        NavigationView {
+            Group {
+                if viewModel.isLoading {
+                    ProgressView("Loading video details...")
+                } else {
+                    Form {
+                        videoPreviewSection
+                        videoDetailsSection
+                        tagsSection
+                        privacySection
+                        editVideoSection
+                    }
+                }
+            }
+            .navigationTitle("Edit Video")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .alert("Error Saving", isPresented: $showError) {
+                Button("OK", action: {})
+            } message: {
+                if let message = errorMessage {
+                    Text(message)
+                }
+            }
+            .sheet(isPresented: $showTagSelection) {
+                TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
+            }
+            .sheet(isPresented: $showTrimView) {
+                if let videoURL = viewModel.videoURL {
+                    VideoTrimView(
+                        timeRange: $viewModel.timeRange,
+                        duration: viewModel.duration,
+                        thumbnails: viewModel.thumbnails ?? [],
+                        onPreview: { time in
+                            viewModel.previewTime(time)
+                        },
+                        onSave: {
+                            Task {
+                                await viewModel.trimVideo()
+                            }
+                        },
+                        viewModel: viewModel
+                    )
+                }
+            }
+            .sheet(isPresented: $showCropView) {
+                if let videoURL = viewModel.videoURL,
+                   let thumbnail = viewModel.thumbnails?.first {
+                    VideoCropView(
+                        cropRect: $viewModel.cropRect,
+                        thumbnail: thumbnail,
+                        onSave: {
+                            Task {
+                                await viewModel.cropVideo()
+                            }
+                        },
+                        viewModel: viewModel
+                    )
+                }
+            }
+            .sheet(isPresented: $showThumbnailView) {
+                VideoThumbnailView(videoId: viewModel.videoId)
+            }
         }
     }
     
-    private var content: some View {
-        Group {
-            if viewModel.isLoading {
-                ProgressView("Loading video details...")
-            } else {
-                Form {
-                    videoDetailsSection
-                    tagsSection
-                    privacySection
-                    thumbnailSection
-                }
+    private var videoPreviewSection: some View {
+        Section {
+            if let player = viewModel.player {
+                VideoPlayer(player: player)
+                    .frame(height: 200)
+                    .overlay(alignment: .bottom) {
+                        HStack {
+                            Button {
+                                isPlaying.toggle()
+                                if isPlaying {
+                                    player.play()
+                                } else {
+                                    player.pause()
+                                }
+                            } label: {
+                                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                            }
+                            
+                            Button {
+                                isMuted.toggle()
+                                player.isMuted = isMuted
+                            } label: {
+                                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                    }
             }
         }
     }
@@ -77,11 +138,9 @@ struct VideoEditView: View {
     private var videoDetailsSection: some View {
         Section("Video Details") {
             TextField("Title", text: $viewModel.title)
-                .focused($focusedField, equals: .title)
                 .textInputAutocapitalization(.words)
             
             TextField("Description", text: $viewModel.description, axis: .vertical)
-                .focused($focusedField, equals: .description)
                 .lineLimit(3...6)
         }
     }
@@ -108,72 +167,45 @@ struct VideoEditView: View {
         }
     }
     
-    private var thumbnailSection: some View {
-        Section("Thumbnail") {
-            if let thumbnails = viewModel.thumbnails {
-                ThumbnailSelectionView(
-                    selectedIndex: $viewModel.selectedThumbnailIndex,
-                    thumbnails: thumbnails
-                )
-            } else {
-                ProgressView("Generating thumbnails...")
+    private var editVideoSection: some View {
+        Section("Edit Video") {
+            Button("Trim Video") {
+                showTrimView = true
+            }
+            .disabled(viewModel.videoURL == nil)
+            
+            Button("Crop Video") {
+                showCropView = true
+            }
+            .disabled(viewModel.videoURL == nil)
+            
+            Button("Change Thumbnail") {
+                showThumbnailView = true
             }
         }
     }
     
     private var toolbarContent: some ToolbarContent {
         Group {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
             }
-            ToolbarItem(placement: .confirmationAction) {
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Save") {
                     Task {
-                        await viewModel.saveChanges()
-                        if viewModel.error == nil {
+                        do {
+                            try await viewModel.saveChanges()
                             dismiss()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                            showError = true
                         }
                     }
                 }
-                .disabled(viewModel.isSaving || viewModel.isLoading)
             }
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    focusedField = nil
-                }
-            }
-        }
-    }
-    
-    private var tagSelectionSheet: some View {
-        NavigationView {
-            TagSelectionView(selectedTags: Binding(
-                get: { viewModel.selectedTags },
-                set: { viewModel.updateTags($0) }
-            ))
-            .navigationTitle("Edit Tags")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        showTagSelection = false
-                    }
-                }
-            }
-        }
-    }
-    
-    private var errorBinding: Binding<Bool> {
-        Binding(
-            get: { viewModel.error != nil },
-            set: { if !$0 { viewModel.clearError() } }
-        )
-    }
-    
-    private var errorAlert: some View {
-        Button("OK") { 
-            viewModel.clearError() 
         }
     }
 }

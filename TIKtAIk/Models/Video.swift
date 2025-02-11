@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseFirestore
+import FirebaseStorage
 
 /// Video content model
 struct Video: Identifiable, Codable {
@@ -31,9 +32,16 @@ struct Video: Identifiable, Codable {
     let isPrivate: Bool
     /// Whether comments are allowed
     let allowComments: Bool
-    /// Video URL for playback
-    var videoURL: String {
-        storageUrl
+    /// Cached download URL
+    private(set) var downloadUrl: String?
+    
+    /// Get video URL for playback
+    /// - Returns: Download URL for the video
+    func getVideoURL() async throws -> URL {
+        // Get download URL from storage
+        let storage = Storage.storage()
+        let ref = storage.reference(withPath: storageUrl)
+        return try await ref.downloadURL()
     }
     
     /// Video metadata information

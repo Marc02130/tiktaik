@@ -26,15 +26,10 @@ import AVKit
 /// - Video preview
 /// - Metadata form
 struct VideoUploadView: View {
-    enum Mode {
-        case upload
-        case edit
-    }
-    
     @StateObject private var viewModel = VideoUploadViewModel()
     @Environment(\.dismiss) private var dismiss
-    @State private var mode: Mode = .upload
     @State private var showTagSelection = false
+    let refreshTrigger: RefreshTrigger
     
     var body: some View {
         NavigationStack {
@@ -48,47 +43,42 @@ struct VideoUploadView: View {
                                 .cornerRadius(12)
                             
                             // Thumbnail Selection
-                            if mode == .upload {
-                                Button {
-                                    Task {
-                                        await viewModel.generateThumbnails()
-                                    }
-                                } label: {
-                                    if let thumbnails = viewModel.thumbnails, !thumbnails.isEmpty {
-                                        ScrollView(.horizontal, showsIndicators: false) {
-                                            HStack(spacing: 12) {
-                                                ForEach(thumbnails.indices, id: \.self) { index in
-                                                    Image(uiImage: thumbnails[index])
-                                                        .resizable()
-                                                        .aspectRatio(contentMode: .fill)
-                                                        .frame(width: 80, height: 120)
-                                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 8)
-                                                                .stroke(index == viewModel.selectedThumbnailIndex ? Color.blue : Color.clear, lineWidth: 2)
-                                                        )
-                                                        .onTapGesture {
-                                                            viewModel.selectedThumbnailIndex = index
-                                                        }
-                                                }
+                            Button {
+                                Task {
+                                    await viewModel.generateThumbnails()
+                                }
+                            } label: {
+                                if let thumbnails = viewModel.thumbnails, !thumbnails.isEmpty {
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 12) {
+                                            ForEach(thumbnails.indices, id: \.self) { index in
+                                                Image(uiImage: thumbnails[index])
+                                                    .resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: 80, height: 120)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .stroke(index == viewModel.selectedThumbnailIndex ? Color.blue : Color.clear, lineWidth: 2)
+                                                    )
+                                                    .onTapGesture {
+                                                        viewModel.selectedThumbnailIndex = index
+                                                    }
                                             }
-                                            .padding(.horizontal)
                                         }
-                                    } else {
-                                        Text("Generate Thumbnails")
-                                            .foregroundColor(.blue)
+                                        .padding(.horizontal)
                                     }
+                                } else {
+                                    Text("Generate Thumbnails")
+                                        .foregroundColor(.blue)
                                 }
                             }
                         }
                     } else {
-                        // Upload Prompt (only show in upload mode)
-                        if mode == .upload {
-                            PhotosPicker(selection: $viewModel.selectedItem,
-                                       matching: .videos,
-                                       photoLibrary: .shared()) {
-                                VideoPickerButton()
-                            }
+                        PhotosPicker(selection: $viewModel.selectedItem,
+                                   matching: .videos,
+                                   photoLibrary: .shared()) {
+                            VideoPickerButton()
                         }
                     }
                     
@@ -153,14 +143,14 @@ struct VideoUploadView: View {
                     if viewModel.selectedVideoURL != nil && !viewModel.isUploading {
                         Button {
                             Task {
-                                if mode == .upload {
-                                    await viewModel.uploadVideo()
-                                } else {
-                                    await viewModel.updateVideo()
+                                await viewModel.uploadVideo()
+                                if viewModel.uploadComplete {
+                                    refreshTrigger.triggerRefresh()
+                                    dismiss()
                                 }
                             }
                         } label: {
-                            Text(mode == .upload ? "Upload Video" : "Save Changes")
+                            Text("Upload Video")
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.blue)
@@ -173,16 +163,14 @@ struct VideoUploadView: View {
                 }
                 .padding()
             }
-            .navigationTitle(mode == .upload ? "Upload Video" : "Edit Video")
+            .navigationTitle("Upload Video")
             .navigationBarTitleDisplayMode(.inline)
-            .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
-                if shouldDismiss {
-                    dismiss()
-                }
-            }
-            .onChange(of: viewModel.uploadComplete) { _, complete in
-                if complete {
-                    mode = .edit
+            .toolbar {
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                     to: nil, from: nil, for: nil)
+                    }
                 }
             }
             .sheet(isPresented: $showTagSelection) {

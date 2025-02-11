@@ -234,3 +234,62 @@ You can create this index by:
 
 Or use this direct link:
 https://console.firebase.google.com/v1/r/project/tiktaik/firestore/indexes?create_composite=CkZwcm9qZWN0cy90aWt0YWlrL2RhdGFiYXNlcy8oZGVmYXVsdCkvY29sbGVjdGlvbkdyb3Vwcy92aWRlb3MvaW5kZXhlcy9fEAEaCgoGdXNlcklkEAEaDQoJY3JlYXRlZEF0EAIaDAoIX19uYW1lX18QAg 
+
+## Refresh Flow Implementation
+
+### Component Hierarchy
+```
+MainTabView
+├── VideoLibraryView (with refreshTrigger)
+└── VideoUploadView (with same refreshTrigger)
+```
+
+### RefreshTrigger Pattern
+1. MainTabView owns the shared RefreshTrigger
+2. Passes to both VideoLibraryView and VideoUploadView
+3. Ensures consistent state across tabs
+
+### Implementation Flow
+1. MainTabView creates RefreshTrigger:
+   ```swift
+   @State private var refreshTrigger = RefreshTrigger()
+   ```
+
+2. Passes to VideoLibraryView:
+   ```swift
+   VideoLibraryView(
+       viewModel: viewModel,
+       refreshTrigger: refreshTrigger
+   )
+   ```
+
+3. Passes to VideoUploadView:
+   ```swift
+   VideoUploadView(refreshTrigger: refreshTrigger)
+   ```
+
+4. VideoUploadView triggers refresh after upload:
+   ```swift
+   if viewModel.uploadComplete {
+       refreshTrigger.triggerRefresh()
+       dismiss()
+   }
+   ```
+
+5. VideoLibraryView responds to trigger:
+   ```swift
+   .onChange(of: refreshTrigger.shouldRefresh) { _, shouldRefresh in
+       if shouldRefresh {
+           Task {
+               await viewModel.loadVideos()
+               refreshTrigger.refreshCompleted()
+           }
+       }
+   }
+   ```
+
+### Benefits
+- Single source of truth for refresh state
+- Consistent refresh behavior
+- Clean separation of concerns
+- Proper state synchronization 

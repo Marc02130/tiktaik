@@ -21,9 +21,10 @@ import SwiftUI
 /// - Navigation to video editing
 /// - Pull to refresh
 struct VideoLibraryView: View {
-    /// View model managing library operations
-    @StateObject private var viewModel = VideoLibraryViewModel()
-    @State private var refreshTrigger = RefreshTrigger()
+    @StateObject var viewModel: VideoLibraryViewModel
+    let refreshTrigger: RefreshTrigger
+    @State private var videoToDelete: Video?
+    @State private var showDeleteConfirmation = false
     
     /// Grid layout configuration
     private let columns = [
@@ -31,26 +32,53 @@ struct VideoLibraryView: View {
     ]
     
     var body: some View {
+        NavigationStack {
+            content
+                .navigationTitle("My Videos")
+                .toolbar { toolbarContent }
+                .sheet(item: $viewModel.selectedVideo) { video in
+                    let editViewModel = VideoEditViewModel(
+                        videoId: video.id, 
+                        refreshTrigger: refreshTrigger,
+                        video: video
+                    )
+                    VideoEditView(viewModel: editViewModel)
+                        .task(priority: .userInitiated) {
+                            do {
+                                try await Task.checkCancellation()
+                                await editViewModel.loadVideo()
+                            } catch {
+                                print("DEBUG: Task cancelled or failed:", error)
+                            }
+                        }
+                }
+        }
+        .task {
+            await viewModel.loadVideos()
+        }
+    }
+    
+    private var content: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(viewModel.videos) { video in
-                    VideoThumbnailView(video: video)
+                    VideoLibraryThumbnailView(video: video)
                         .onTapGesture {
                             viewModel.selectedVideo = video
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                videoToDelete = video
+                                showDeleteConfirmation = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
                 }
             }
             .padding()
         }
-        .navigationTitle("My Videos")
         .refreshable {
-            await viewModel.loadVideos()
-        }
-        .sheet(item: $viewModel.selectedVideo) { video in
-            VideoEditView(videoId: video.id, refreshTrigger: refreshTrigger)
-                .environmentObject(viewModel)
-        }
-        .task {
             await viewModel.loadVideos()
         }
         .onChange(of: refreshTrigger.shouldRefresh) { _, shouldRefresh in
@@ -61,11 +89,39 @@ struct VideoLibraryView: View {
                 }
             }
         }
+        .confirmationDialog(
+            "Delete Video?",
+            isPresented: $showDeleteConfirmation,
+            presenting: videoToDelete
+        ) { video in
+            Button("Delete", role: .destructive) {
+                Task {
+                    await viewModel.deleteVideo(video)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                videoToDelete = nil
+            }
+        } message: { video in
+            Text("Are you sure you want to delete '\(video.title)'? This action cannot be undone.")
+        }
+    }
+    
+    private var toolbarContent: some ToolbarContent {
+        Group {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    // Add any toolbar actions if needed
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+            }
+        }
     }
 }
 
 /// View for displaying video thumbnail and metadata
-private struct VideoThumbnailView: View {
+private struct VideoLibraryThumbnailView: View {
     let video: Video
     
     var body: some View {

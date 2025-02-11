@@ -30,7 +30,7 @@ final class VideoPlayerViewModel: ObservableObject {
     @Published var shares = 0
     
     private let cache = VideoCache.shared
-    private let video: Video
+    private let video: Video  // Keep as let since getVideoURL is no longer mutating
     
     init(video: Video) {
         self.video = video
@@ -38,17 +38,13 @@ final class VideoPlayerViewModel: ObservableObject {
         self.comments = video.stats.commentsCount
         self.shares = video.stats.shares
         
-        if let url = URL(string: video.storageUrl) {
-            self.player = AVPlayer(url: url)
-            NotificationCenter.default.addObserver(
-                self,
-                selector: #selector(videoDidFinish),
-                name: .AVPlayerItemDidPlayToEndTime,
-                object: player?.currentItem
-            )
+        // Remove direct URL initialization since it's using storageUrl incorrectly
+        // Instead, start loading video immediately
+        Task {
+            await loadVideo()
         }
         
-        // Fix actor isolation with @MainActor.run
+        // Keep existing notification observer
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("StopVideo"),
             object: nil,
@@ -68,43 +64,96 @@ final class VideoPlayerViewModel: ObservableObject {
         NotificationCenter.default.post(name: .advanceToNextVideo, object: nil)
     }
     
-    /// Loads video from Firebase Storage
-    /// - Parameter video: Video to load
-    func loadVideo(_ video: Video) async {
-        await MainActor.run {
-            isLoading = true
-            error = nil
-            
+    /// Preloads video without starting playback
+    func preloadVideo() async {
+        do {
             // Check cache first
-            if let cachedPlayer = cache.getCachedPlayer(for: video.id) {
-                self.player = cachedPlayer
-                self.isLoading = false
+            if cache.getCachedPlayer(for: video.id) != nil {
+                // Already cached, nothing to do
                 return
             }
-        }
-        
-        do {
-            // Check URL cache
-            let videoURL: URL
-            if let cachedURL = cache.getCachedURL(for: video.id) {
-                videoURL = cachedURL
-            } else {
-                let storageRef = Storage.storage().reference(forURL: video.storageUrl)
-                videoURL = try await storageRef.downloadURL()
-                cache.cacheURL(id: video.id, url: videoURL)
-            }
             
-            // Create and cache player
-            let playerItem = AVPlayerItem(url: videoURL)
+            // Get fresh URL and create player
+            let url = try await video.getVideoURL()
+            let playerItem = AVPlayerItem(url: url)
             let player = AVPlayer(playerItem: playerItem)
+            
+            // Cache the player for later use
             cache.cachePlayer(id: video.id, player: player)
             
+            // Add end notification observer
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(videoDidFinish),
+                name: .AVPlayerItemDidPlayToEndTime,
+                object: playerItem
+            )
+            
+            // Set up player but don't start playing
             await MainActor.run {
                 self.player = player
                 self.isLoading = false
             }
             
         } catch {
+            print("Error preloading video:", error)
+        }
+    }
+    
+    /// Loads video from Firebase Storage
+    /// - Parameter video: Video to load
+    func loadVideo() async {
+        do {
+            await MainActor.run {
+                isLoading = true
+                error = nil
+            }
+            
+            // Check cache first
+            if let cachedPlayer = cache.getCachedPlayer(for: video.id) {
+                await MainActor.run {
+                    self.player = cachedPlayer
+                    self.isLoading = false
+                }
+                
+                // Add end notification observer
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(videoDidFinish),
+                    name: .AVPlayerItemDidPlayToEndTime,
+                    object: cachedPlayer.currentItem
+                )
+                
+                // Start playback immediately for cached player
+                await cachedPlayer.seek(to: .zero)
+                cachedPlayer.play()
+                return
+            }
+            
+            // Get fresh URL and create player
+            let url = try await video.getVideoURL()
+            let playerItem = AVPlayerItem(url: url)
+            let player = AVPlayer(playerItem: playerItem)
+            cache.cachePlayer(id: video.id, player: player)
+            
+            // Add end notification observer
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(videoDidFinish),
+                name: .AVPlayerItemDidPlayToEndTime,
+                object: playerItem
+            )
+            
+            await MainActor.run {
+                self.player = player
+                self.isLoading = false
+            }
+            
+            // Start playback immediately for new player
+            player.play()
+            
+        } catch {
+            print("Error loading video:", error)
             await MainActor.run {
                 self.error = error.localizedDescription
                 self.isLoading = false
@@ -119,6 +168,7 @@ final class VideoPlayerViewModel: ObservableObject {
     }
     
     func startPlayback() {
+        player?.seek(to: .zero) // Reset to start
         player?.play()
     }
     

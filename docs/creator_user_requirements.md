@@ -1,4 +1,33 @@
-# User Requirements - Week 1 Minimum
+# Creator User Requirements - Week 1 Minimum
+
+## Video Upload Requirements
+- Format: MP4, MOV
+- Size: Up to 500MB
+
+## Metadata Requirements
+### Required Fields
+- Title
+- Description
+- Creator Type
+- Group (genre/subject/cuisine)
+
+### Optional Fields
+- Tags
+- Custom fields (based on creator type)
+
+## Creator Types
+1. Chef/Food
+2. Fitness
+3. Educational
+4. Comedy
+5. Beauty/Makeup
+6. Music
+
+## Basic Features
+- Upload video
+- Add basic metadata
+- Preview before publishing
+- Edit metadata after upload
 
 ## Common Video Requirements
 
@@ -6,7 +35,6 @@
 - **Video Specifications**
   - Format: MP4, MOV
   - Resolution: Up to 1080p
-  - Duration: 15s - 3min
   - Size: Up to 500MB
 
 ## Creator Type Requirements

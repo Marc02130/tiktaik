@@ -7,48 +7,38 @@ import SwiftUI          // UI Framework
 import AVFoundation     // Video Processing
 import Firebase        // Backend Services
 
-// App Architecture
-@main
-struct TIKtAIkApp: App {
-    @StateObject private var appState = AppState()
-    
-    var body: some Scene {
-        WindowGroup {
-            RootView()
-                .environmentObject(appState)
-        }
-    }
+struct VideoMetadata {
+    let id: String
+    let title: String              // Required
+    let description: String        // Required
+    let creatorType: CreatorType   // Required
+    let group: String              // Required (genre/subject/cuisine/etc)
+    let tags: [String]             // Optional
+    let customFields: [String: Any] // Dynamic fields from Firestore
 }
-```
 
-## Video Processing
-
-### Upload Service
-```swift
 protocol VideoUploadService {
     /// Uploads video with metadata
-    func uploadVideo(url: URL, metadata: ContentMetadata) async throws -> URL
+    func uploadVideo(url: URL, metadata: VideoMetadata) async throws -> URL
 }
 
 struct VideoProcessingConfig {
-    static let maxSize = 500 * 1024 * 1024       // 500MB
-    static let maxDuration = TimeInterval(180)    // 3 minutes
+    static let maxSize = 500 * 1024 * 1024  // 500MB
     static let supportedFormats = ["mp4", "mov"]
 }
 ```
 
 ## Data Management
-
-### Firebase Configuration
 ```swift
 struct FirebaseConfig {
-    static let collection = "creators"
-    static let storage = "videos"
+    static let videos = "videos"
+    static let metadata = "metadata_configs"
 }
 
 protocol DataService {
-    func saveMetadata(_ metadata: ContentMetadata, userId: String) async throws
-    func getMetadata(contentId: String) async throws -> ContentMetadata
+    func saveMetadata(_ metadata: VideoMetadata, userId: String) async throws
+    func getMetadata(contentId: String) async throws -> VideoMetadata
+    func getCreatorTypeConfig(type: CreatorType) async throws -> [String: Any]
 }
 ```
 
@@ -66,13 +56,9 @@ struct SecurityConfig {
 ```
 
 ## Performance Requirements
-
-### Video Processing
 - Upload: < 3 minutes for 500MB
 - Playback start: < 2 seconds
-
-### UI
-- Response time: < 100ms
+- UI response: < 100ms
 
 ## Error Handling
 ```swift

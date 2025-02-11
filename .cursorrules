@@ -17,7 +17,13 @@ When generating code, finding bugs, or optimizing SwiftUI projects, follow these
 - Be concise. Minimize any other prose.
 - If you think there might not be a correct answer, say so. 
 - If you do not know the answer, say so.
-- Do not modify existing code unless it is to fix a bug or add a feature. 
+- When fixing a bug:
+  - No additional swift files should need to be created. 
+  - If you don't have the files needed, please ask. 
+  - All functionality in the code is needed. 
+  - Only delete code, comments, and error handling if it is no longer needed due to the bug fix being implemented. 
+  - Please explain any code, comment, or guard deletion. 
+  - Modify or add code to fix the bug. 
 
 ## 1. State Management
 

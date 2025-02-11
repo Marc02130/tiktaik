@@ -251,13 +251,14 @@ final class VideoUploadViewModel: ObservableObject {
         error = nil
         
         do {
-            let videoId = UUID().uuidString
+            let videoId = UUID().uuidString // Generate videoId once
             let storageRef = Storage.storage().reference()
             
             // 1. Upload video file
-            let videoRef = storageRef.child("videos/\(videoId).mp4")
+            let storagePath = "videos/\(videoId).\(videoURL.pathExtension)" // Use same videoId
+            let videoRef = storageRef.child(storagePath)
             let metadata = StorageMetadata()
-            metadata.contentType = "video/mp4"
+            metadata.contentType = "video/\(videoURL.pathExtension)" // Use actual file extension
             
             let _ = try await videoRef.putFileAsync(from: videoURL, metadata: metadata) { [weak self] progress in
                 guard let progress = progress else { return }
@@ -281,8 +282,8 @@ final class VideoUploadViewModel: ObservableObject {
                 }
             }
             
-            // 3. Create video document
-            _ = try await createVideo(videoDownloadURL: videoDownloadURL, thumbnailURL: thumbnailURL)
+            // 3. Create video document with same videoId and storage path
+            _ = try await createVideo(videoId: videoId, storagePath: storagePath, thumbnailURL: thumbnailURL)
             
             uploadComplete = true
             uploadStatus = "Upload complete!"
@@ -297,6 +298,46 @@ final class VideoUploadViewModel: ObservableObject {
             self.error = error.localizedDescription
             isUploading = false
         }
+    }
+    
+    private func createVideo(videoId: String, storagePath: String, thumbnailURL: String?) async throws -> Video {
+        let userId = Auth.auth().currentUser?.uid ?? ""
+        
+        // Get the local video URL for metadata extraction
+        guard let localVideoURL = selectedVideoURL else {
+            throw UploadError.invalidVideo
+        }
+        
+        let metadata = try await self.extractVideoMetadata(from: localVideoURL)
+        
+        let video = Video(
+            id: videoId, // Use same videoId passed from upload
+            userId: userId,
+            title: title,
+            description: description.isEmpty ? nil : description,
+            metadata: metadata,
+            stats: Video.Stats(
+                views: 0,
+                likes: 0,
+                shares: 0,
+                commentsCount: 0
+            ),
+            status: .processing,
+            storageUrl: storagePath, // Use storage path passed from upload
+            thumbnailUrl: thumbnailURL,
+            createdAt: Date(),
+            updatedAt: Date(),
+            tags: Set(selectedTags),
+            isPrivate: isPrivate,
+            allowComments: allowComments
+        )
+        
+        try await Firestore.firestore()
+            .collection(Video.collectionName)
+            .document(videoId)
+            .setData(video.asDictionary)
+        
+        return video
     }
     
     func updateVideo() async {
@@ -403,47 +444,6 @@ final class VideoUploadViewModel: ObservableObject {
             case .invalidFormat: return "Unsupported video format"
             }
         }
-    }
-    
-    private func createVideo(videoDownloadURL: URL, thumbnailURL: String?) async throws -> Video {
-        let videoId = UUID().uuidString
-        let userId = Auth.auth().currentUser?.uid ?? ""
-        
-        // Get the local video URL for metadata extraction
-        guard let localVideoURL = selectedVideoURL else {
-            throw UploadError.invalidVideo
-        }
-        
-        let metadata = try await self.extractVideoMetadata(from: localVideoURL)
-        
-        let video = Video(
-            id: videoId,
-            userId: userId,
-            title: title,
-            description: description.isEmpty ? nil : description,
-            metadata: metadata,
-            stats: Video.Stats(
-                views: 0,
-                likes: 0,
-                shares: 0,
-                commentsCount: 0
-            ),
-            status: .processing,
-            storageUrl: videoDownloadURL.absoluteString,
-            thumbnailUrl: thumbnailURL,
-            createdAt: Date(),
-            updatedAt: Date(),
-            tags: Set(selectedTags),
-            isPrivate: isPrivate,
-            allowComments: allowComments
-        )
-        
-        try await Firestore.firestore()
-            .collection(Video.collectionName)
-            .document(videoId)
-            .setData(video.asDictionary)
-        
-        return video
     }
     
     // Update tag selection method

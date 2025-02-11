@@ -34,6 +34,8 @@ final class VideoLibraryViewModel: ObservableObject {
     /// Whether videos are currently loading
     @Published private(set) var isLoading = false
     
+    private let deleteService = VideoDeleteService()
+    
     /// Loads user's videos from Firestore
     func loadVideos() async {
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -61,6 +63,25 @@ final class VideoLibraryViewModel: ObservableObject {
             if error.localizedDescription.contains("requires an index") {
                 self.error = "Database setup required. Please contact support."
             }
+        }
+    }
+    
+    /// Deletes a video
+    /// - Parameter video: Video to delete
+    func deleteVideo(_ video: Video) async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            try await deleteService.deleteVideo(video)
+            // Remove from local array
+            videos.removeAll { $0.id == video.id }
+            // Refresh the video list
+            await loadVideos()
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+            print("Error deleting video:", error)
         }
     }
 } 

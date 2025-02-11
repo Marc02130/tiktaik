@@ -26,6 +26,7 @@ struct MainTabView: View {
     @Binding var router: Router
     /// Selected tab index
     @State private var selectedTab = 0
+    @State private var refreshTrigger = RefreshTrigger()  // Add only this for VideoEditView
     
     var body: some View {
         // Add debug print to check if view is being rendered
@@ -51,16 +52,19 @@ struct MainTabView: View {
             
             // Video Library
             NavigationStack(path: $router.libraryPath) {
-                VideoLibraryView()
+                VideoLibraryView(
+                    viewModel: VideoLibraryViewModel(),  // Create here since it's needed per instance
+                    refreshTrigger: refreshTrigger
+                )
             }
             .tabItem {
-                Label("Library", systemImage: "film.stack")
+                Label("Library", systemImage: "photo.stack")
             }
             .tag(1)
             
             // Upload tab - Direct navigation to VideoUploadView
             NavigationStack {
-                VideoUploadView()
+                VideoUploadView(refreshTrigger: refreshTrigger)
             }
             .tabItem {
                 Label("Upload", systemImage: "plus.circle.fill")
