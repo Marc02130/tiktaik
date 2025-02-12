@@ -19,6 +19,7 @@ import FirebaseFirestore
 extension NSNotification.Name {
     static let advanceToNextVideo = NSNotification.Name("AdvanceToNextVideo")
     static let stopVideo = NSNotification.Name("StopVideo")
+    static let startVideo = NSNotification.Name("StartVideo")
 }
 
 struct VideoPlayerView: View {
@@ -32,6 +33,7 @@ struct VideoPlayerView: View {
     @AppStorage("showSubtitles") private var showSubtitles = true
     
     init(video: Video, isVisible: Bool, onPlaybackStatusChanged: @escaping (PlaybackStatus) -> Void) {
+        print("DEBUG: Initializing VideoPlayerView for video \(video.id)")
         self.video = video
         self.isVisible = isVisible
         self.onPlaybackStatusChanged = onPlaybackStatusChanged
@@ -43,6 +45,8 @@ struct VideoPlayerView: View {
             videoId: video.id,
             videoURL: URL(string: "placeholder")!
         ))
+        
+        print("DEBUG: VideoPlayerView initialization complete for \(video.id)")
     }
     
     var body: some View {
@@ -51,60 +55,133 @@ struct VideoPlayerView: View {
                 if let player = viewModel.player {
                     VideoPlayer(player: player)
                         .onAppear {
-                            // Start playback when view appears if visible
+                            print("DEBUG: VideoPlayer appeared, isVisible=\(isVisible)")
                             if isVisible {
                                 viewModel.startPlayback()
                             }
                         }
                 } else {
-                    // Show loading state
                     ProgressView()
+                        .debugLog("Loading indicator for \(video.id)")
                 }
                 
-                if shouldShowSubtitles {
-                    SubtitleOverlayView(
-                        subtitles: subtitleViewModel.subtitles,
-                        currentTime: viewModel.currentTime,
-                        preferences: subtitleViewModel.preferences
+                // Controls and subtitles in front
+                VStack {
+                    if shouldShowSubtitles {
+                        SubtitleOverlayView(
+                            subtitles: subtitleViewModel.subtitles,
+                            currentTime: viewModel.currentTime,
+                            preferences: subtitleViewModel.preferences
+                        )
+                    }
+
+                    VideoControlsOverlay(
+                        video: video,
+                        stats: statsViewModel.stats,
+                        onLike: statsViewModel.toggleLike,
+                        onComment: statsViewModel.showComments,
+                        onShare: statsViewModel.shareVideo
                     )
                 }
-                
-                VideoControlsOverlay(
-                    video: video,
-                    stats: statsViewModel.stats,
-                    onLike: statsViewModel.toggleLike,
-                    onComment: statsViewModel.showComments,
-                    onShare: statsViewModel.shareVideo
-                )
             }
         }
-        .onChange(of: isVisible) { oldValue, newValue in
+        .onAppear {
+            // Listen for start video notification
+            NotificationCenter.default.addObserver(
+                forName: .startVideo,
+                object: nil,
+                queue: .main
+            ) { [video] notification in
+                if let videoId = notification.userInfo?["videoId"] as? String,
+                   videoId == video.id {
+                    print("DEBUG: Received start notification for video \(video.id)")
+                    if isVisible {
+                        viewModel.startPlayback()
+                    }
+                }
+            }
+        }
+        .onChange(of: isVisible) { _, newValue in
+            print("DEBUG: Visibility changed to \(newValue) for video \(video.id)")
             if newValue {
                 viewModel.startPlayback()
-                if !oldValue {
-                    statsViewModel.incrementViews()
-                }
             } else {
                 viewModel.pausePlayback()
             }
         }
-        .onChange(of: viewModel.playbackStatus) { status in
-            onPlaybackStatusChanged(status)
+        .onChange(of: viewModel.playbackStatus) { _, newStatus in
+            onPlaybackStatusChanged(newStatus)
         }
         .task {
-            // Load video URL and initialize player
-            do {
-                let videoURL = try await video.getVideoURL()
-                await viewModel.loadVideo(from: videoURL)
-                await subtitleViewModel.updateVideoURL(videoURL)
-            } catch {
-                print("Error loading video:", error)
-            }
+            // Load video immediately when view is created
+            await loadVideo()
+        }
+        .debugVideoState(videoId: video.id, isVisible: isVisible)
+    }
+    
+    private func loadVideo() async {
+        print("DEBUG: Starting video load task for \(video.id)")
+        do {
+            let videoURL = try await video.getVideoURL()
+            await viewModel.loadVideo(from: videoURL)
+            await subtitleViewModel.updateVideoURL(videoURL)
+        } catch {
+            print("ERROR: Failed to load video \(video.id): \(error)")
         }
     }
     
     private var shouldShowSubtitles: Bool {
-        showSubtitles && !subtitleViewModel.subtitles.isEmpty
+        return viewModel.showSubtitles && !subtitleViewModel.subtitles.isEmpty
+    }
+}
+
+// Custom view modifier for debugging
+private struct DebugLogModifier: ViewModifier {
+    let message: String
+    let isVisible: Bool?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                if let isVisible = isVisible {
+                    print("DEBUG: \(message), isVisible: \(isVisible)")
+                } else {
+                    print("DEBUG: \(message) appeared")
+                }
+            }
+            .onDisappear {
+                print("DEBUG: \(message) disappeared")
+            }
+    }
+}
+
+// Custom view modifier for video state debugging
+private struct VideoStateModifier: ViewModifier {
+    let videoId: String
+    let isVisible: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                print("DEBUG: VideoPlayerView appeared for \(videoId)")
+            }
+            .onDisappear {
+                print("DEBUG: VideoPlayerView disappeared for \(videoId)")
+            }
+            .onChange(of: isVisible) { oldValue, newValue in
+                print("DEBUG: Visibility changed for video \(videoId) from \(oldValue) to \(newValue)")
+            }
+    }
+}
+
+// Helper extensions
+extension View {
+    func debugLog(_ message: String, isVisible: Bool? = nil) -> some View {
+        modifier(DebugLogModifier(message: message, isVisible: isVisible))
+    }
+    
+    func debugVideoState(videoId: String, isVisible: Bool) -> some View {
+        modifier(VideoStateModifier(videoId: videoId, isVisible: isVisible))
     }
 }
 

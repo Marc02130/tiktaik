@@ -16,14 +16,35 @@ import FirebaseAuth
 
 @MainActor
 final class FeedViewModel: ObservableObject {
-    enum FeedState {
+    enum FeedState: Equatable {
         case idle
         case loading
         case loaded([Video])
         case error(String)
+        
+        static func == (lhs: FeedState, rhs: FeedState) -> Bool {
+            switch (lhs, rhs) {
+            case (.idle, .idle):
+                return true
+            case (.loading, .loading):
+                return true
+            case (.loaded(let lhsVideos), .loaded(let rhsVideos)):
+                return lhsVideos.map { $0.id } == rhsVideos.map { $0.id }
+            case (.error(let lhsError), .error(let rhsError)):
+                return lhsError == rhsError
+            default:
+                return false
+            }
+        }
     }
     
-    @Published private(set) var state: FeedState = .idle
+    @Published private(set) var state: FeedState = .idle {
+        didSet {
+            if case .loaded(let videos) = state {
+                self.videos = videos
+            }
+        }
+    }
     private let feedService = FeedService()
     private let auth = Auth.auth()
     private var lastVideo: Video?
@@ -195,5 +216,40 @@ final class FeedViewModel: ObservableObject {
     func videoStartedPlaying(_ videoId: String) {
         currentVideoId = videoId
         preloadNextVideo()
+    }
+    
+    private func loadMoreVideos() async {
+        guard !isLoading else { return }
+        
+        print("DEBUG: Loading more videos")
+        isLoading = true
+        
+        let lastVideo = videos.last
+        let query = FeedQuery(
+            limit: 10,  // Increase batch size
+            lastVideo: lastVideo,
+            config: config
+        )
+        
+        do {
+            let newVideos = try await feedService.fetchFeed(query: query)
+            await MainActor.run {
+                self.videos.append(contentsOf: newVideos)
+                self.isLoading = false
+                print("DEBUG: Loaded \(newVideos.count) more videos, total: \(self.videos.count)")
+            }
+        } catch {
+            print("ERROR: Failed to load more videos: \(error)")
+            isLoading = false
+        }
+    }
+    
+    func checkAndLoadMoreVideos(at index: Int) {
+        // Load more when we're 2 videos away from the end
+        if index >= videos.count - 2 {
+            Task {
+                await loadMoreVideos()
+            }
+        }
     }
 } 

@@ -3,7 +3,7 @@ import FirebaseFirestore
 import FirebaseStorage
 
 /// Video content model
-struct Video: Identifiable, Codable {
+struct Video: Identifiable, Codable, Equatable {
     /// Unique video identifier
     let id: String
     /// Creator's user ID
@@ -297,6 +297,11 @@ struct Video: Identifiable, Codable {
             isPrivate: data["isPrivate"] as? Bool ?? false,
             allowComments: data["allowComments"] as? Bool ?? true
         )
+    }
+    
+    static func == (lhs: Video, rhs: Video) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.updatedAt == rhs.updatedAt
     }
 }
 

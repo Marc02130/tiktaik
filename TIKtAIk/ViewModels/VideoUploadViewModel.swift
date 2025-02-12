@@ -322,7 +322,7 @@ final class VideoUploadViewModel: ObservableObject {
                 shares: 0,
                 commentsCount: 0
             ),
-            status: .processing,
+            status: .ready,
             storageUrl: storagePath, // Use storage path passed from upload
             thumbnailUrl: thumbnailURL,
             createdAt: Date(),

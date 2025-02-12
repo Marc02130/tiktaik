@@ -329,21 +329,29 @@ import SwiftUI // For pow() function
     
     func fetchFeed(query: FeedQuery) async throws -> [Video] {
         print("DEBUG: FeedService - Fetching feed")
-        print("DEBUG: Query config:", query.config)
+        print("DEBUG: Query config: \(query.config)")
         
-        let videosRef = db.collection(Video.collectionName)
-        var queryRef: Query = videosRef
-        
-        if query.config.isCreatorOnly {
-            print("DEBUG: Applying creator filter for userId:", query.config.userId)
-            queryRef = queryRef.whereField("userId", isEqualTo: query.config.userId)
-        }
-        
-        queryRef = queryRef
-            .order(by: "createdAt", descending: true)
+        var feedQuery = Firestore.firestore()
+            .collection("videos")
+            .whereField("status", isEqualTo: Video.Status.ready.rawValue)  // Only get ready videos
             .limit(to: query.limit)
         
-        let snapshot = try await queryRef.getDocuments()
+        // Add other query conditions...
+        if query.config.isCreatorOnly {
+            feedQuery = feedQuery.whereField("userId", isEqualTo: query.config.userId)
+        }
+        
+        if query.config.followingOnly {
+            // Add following filter
+        }
+        
+        if !query.config.selectedTags.isEmpty {
+            feedQuery = feedQuery.whereField("tags", arrayContainsAny: Array(query.config.selectedTags))
+        }
+        
+        // Rest of query implementation...
+        
+        let snapshot = try await feedQuery.getDocuments()
         print("DEBUG: Found \(snapshot.documents.count) documents")
         
         let videos = try snapshot.documents.compactMap { doc -> Video? in

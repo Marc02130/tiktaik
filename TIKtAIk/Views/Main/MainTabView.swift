@@ -37,13 +37,8 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             // Home feed tab
             NavigationStack(path: $router.homePath) {
-                FeedView()  // Replace placeholder with actual FeedView
-                    .navigationTitle("For You")
-                #if DEBUG
-                Text("Debug: Tab \(selectedTab)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                #endif
+                FeedView()
+                    .toolbar(.hidden) // Hide navigation bar
             }
             .tabItem {
                 Label("Home", systemImage: "house.fill")

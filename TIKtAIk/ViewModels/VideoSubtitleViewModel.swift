@@ -45,16 +45,25 @@ class VideoSubtitleViewModel: ObservableObject {
     }
     
     func loadSubtitles() async {
+        print("DEBUG: [SUBTITLES] Loading subtitles for video \(videoId)")
         do {
-            let snapshot = try await db.collection("videoSubtitles")
+            let snapshot = try await db.collection(VideoSubtitle.collectionName)
                 .whereField("videoId", isEqualTo: videoId)
                 .getDocuments()
             
+            print("DEBUG: [SUBTITLES] Found \(snapshot.documents.count) subtitles for video \(videoId)")
+            
             subtitles = snapshot.documents.compactMap { doc -> VideoSubtitle? in
-                try? doc.data(as: VideoSubtitle.self)
+                if let subtitle = try? VideoSubtitle.from(doc) {
+                    print("DEBUG: [SUBTITLES] Loaded subtitle: \(subtitle)")
+                    return subtitle
+                }
+                return nil
             }.sorted { $0.startTime < $1.startTime }
+            
+            print("DEBUG: [SUBTITLES] Loaded \(subtitles.count) subtitles for video \(videoId)")
         } catch {
-            print("Error loading subtitles:", error)
+            print("ERROR: [SUBTITLES] Failed to load subtitles for \(videoId): \(error)")
             self.error = error
         }
     }
@@ -129,8 +138,12 @@ class VideoSubtitleViewModel: ObservableObject {
     
     @MainActor
     func updateVideoURL(_ url: URL) {
+        print("DEBUG: [SUBTITLES] Updating video URL for \(videoId): \(url)")
         // Only update if URL has changed
-        guard url != videoURL else { return }
+        guard url != videoURL else {
+            print("DEBUG: [SUBTITLES] URL unchanged for \(videoId)")
+            return
+        }
         // Update the URL and reload subtitles
         self.videoURL = url
         Task {

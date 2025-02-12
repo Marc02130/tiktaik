@@ -21,16 +21,23 @@ struct SubtitleOverlayView: View {
     
     var body: some View {
         VStack {
-            if let subtitle = currentSubtitle {
-                Text(subtitle.text)
-                    .font(preferences.fontSize.font)
-                    .foregroundColor(preferences.textColor.color)
-                    .shadow(radius: preferences.shadowRadius)
-                    .transition(.opacity)
+            HStack(alignment: .top) {
+                if let subtitle = currentSubtitle {
+                    Text(subtitle.text)
+                        .font(preferences.fontSize.font)
+                        .foregroundColor(preferences.textColor.color)
+                        .shadow(radius: preferences.shadowRadius)
+                        .transition(.opacity)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 50)
+                }
             }
+            .padding()
+            .padding(.top, 40)
+            Spacer()
         }
         .animation(.easeInOut, value: currentTime)
-        .frame(maxHeight: .infinity, alignment: preferences.position == .bottom ? .bottom : .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
     

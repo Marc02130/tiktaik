@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct VideoControlsOverlay: View {
     let video: Video
@@ -7,16 +8,34 @@ struct VideoControlsOverlay: View {
     let onComment: () -> Void
     let onShare: () -> Void
     
+    @State private var username: String = ""
+    
     var body: some View {
         VStack {
-            Spacer()
-            HStack {
+            Spacer()  // Push everything to bottom
+            
+            HStack(alignment: .bottom) {
                 // Video info
                 VStack(alignment: .leading) {
                     Text(video.title)
                         .font(.headline)
-                    Text("@\(video.userId)")
+                    Text("@\(username)")
                         .font(.subheadline)
+                        .onAppear {
+                            Task {
+                                // Get username from Firestore
+                                if let userData = try? await Firestore.firestore()
+                                    .collection("users")
+                                    .document(video.userId)
+                                    .getDocument()
+                                    .data(),
+                                   let username = userData["username"] as? String {
+                                    await MainActor.run {
+                                        self.username = username
+                                    }
+                                }
+                            }
+                        }
                 }
                 .foregroundColor(.white)
                 .shadow(radius: 2)
@@ -45,6 +64,7 @@ struct VideoControlsOverlay: View {
                 }
             }
             .padding()
+            .padding(.bottom, 70) // Account for tab bar
         }
     }
 } 
