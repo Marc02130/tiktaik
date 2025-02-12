@@ -1,0 +1,88 @@
+---
+description: Bug Fixing Standards
+globs: *.swift
+---
+# Bug Fixing Standards
+
+1. Context Requirements
+   MUST check before requesting files:
+   - Review error messages and stack traces
+   - Check provided code snippets
+   - Review related cursor rules
+   - Look for file paths in logs
+   
+2. File Request Protocol
+   When requesting files:
+   - Explain why the file is needed
+   - Reference the specific error/issue
+   - List what was checked first
+   - Quote relevant error messages
+
+3. Code Deletion Criteria
+   MUST meet ONE of these conditions:
+   - Code is directly causing the bug
+   - Functionality has been replaced
+   - Code is redundant due to the bug fix
+   
+4. Required Documentation
+   All deletions MUST include:
+   - Comment explaining why code is no longer needed
+   - Reference to new implementation (if moved)
+   - Bug ticket/issue number
+   
+5. Error Handling
+   Only remove error handling if:
+   - Error case is no longer possible
+   - Error is now handled at a different layer
+   - Error handling was incorrect
+
+6. Examples:
+```swift
+// Bad: Requesting file without context
+// "Can I see the VideoService file?"
+
+// Good: Contextual file request
+// "Based on the AVAssetExportSession error in line 234 of VideoEditService.swift,
+// and the stack trace showing a call to VideoService.validateAsset(),
+// could you share the VideoService.swift file?"
+
+// Good: Code modification with explanation
+func processVideo() {
+    // Removed: Old error check - Issue #123
+    // Error now handled in VideoService.validateAsset()
+    // if !isValidVideo { throw VideoError.invalid }
+    
+    // Implementation continues...
+}
+```
+
+<rule>
+name: bug_fixing_standards
+description: Requirements for bug fixes and file requests
+filters:
+  - type: content
+    pattern: "(?i)fix|bug|issue|crash|error"
+  - type: event
+    pattern: "code_change|file_request"
+
+actions:
+  - type: enforce
+    conditions:
+      - pattern: "new\\s+file\\s+creation"
+        message: "Bug fixes should not create new files"
+      
+      - pattern: "(?i)delete\\s+without\\s+explanation"
+        message: "Deletions must be explained in comments"
+        
+      - pattern: "(?i)file\\s+request\\s+without\\s+context"
+        message: "File requests must include context and prior research"
+
+metadata:
+  priority: high
+  version: 1.0
+  category: code_quality
+  tags: 
+    - bug_fix
+    - code_standards
+    - maintenance
+</rule>

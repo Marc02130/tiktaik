@@ -1,0 +1,56 @@
+---
+description: AVAssetExportSession State Handling Rule
+globs: *.swift
+---
+# AVAssetExportSession.State Usage Rules
+
+## Overview
+Rules for handling AVAssetExportSession.State in iOS 18.0+ export operations.
+
+## States
+AVAssetExportSession.State has three main states:
+- `pending`: Initial state before export begins
+- `exporting(progress: Progress)`: Active export with progress
+- `waiting`: Export temporarily paused
+
+## Implementation Rules
+
+### 1. Version Handling
+- MUST check iOS version availability:
+```swift
+if #available(iOS 18.0, *) {
+    // Use new State API
+} else {
+    // Use deprecated status API
+}
+```
+
+### 2. State Monitoring
+- MUST use `states(updateInterval:)` for iOS 18+
+- MUST handle all state cases including @unknown
+- MUST provide progress updates when in exporting state
+
+### 3. Error Handling
+- MUST verify output file exists after export
+- MUST throw appropriate errors for failed exports
+- MUST cleanup temporary files
+
+### 4. Code Pattern
+```swift
+switch state {
+case .exporting(let progress):
+    // Handle progress
+case .pending, .waiting:
+    // Handle intermediate states
+@unknown default:
+    // Handle future cases
+}
+```
+
+## Migration Notes
+- Replaces deprecated `status` property
+- Replaces deprecated `progress` property
+- Provides more granular state control
+
+## References
+- [Apple Documentation](mdc:https:/developer.apple.com/documentation/avfoundation/avassetexportsession/state)

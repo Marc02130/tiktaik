@@ -1,0 +1,147 @@
+# Testing Standards
+
+Rules for implementing tests in SwiftUI projects.
+
+<rule>
+name: testing_standards
+description: Standards for unit tests, UI tests, and previews
+
+filters:
+  - type: file_extension
+    pattern: "\\.(swift|xctestcase)$"
+  - type: path
+    pattern: "(Tests|UITests|Preview\\.swift)$"
+
+actions:
+  - type: enforce
+    patterns:
+      # Unit Test Structure
+      - pattern: |
+          final class \w+Tests: XCTestCase {
+              private var sut: \w+\!
+              private var mock\w+: Mock\w+\!
+              
+              override func setUp\(\) {
+                  super\.setUp\(\)
+                  // Setup
+              }
+              
+              override func tearDown\(\) {
+                  sut = nil
+                  mock\w+ = nil
+                  super\.tearDown\(\)
+              }
+          }
+        message: "Follow standard XCTest structure"
+
+      # Test Naming
+      - pattern: |
+          func test_\w+_\w+\(\)
+        message: "Use test_behavior_expectedResult naming"
+
+      # Mock Objects
+      - pattern: |
+          final class Mock\w+: \w+ {
+              var \w+Called = false
+              var \w+Count = 0
+              
+              func \w+\(\) {
+                  \w+Called = true
+                  \w+Count \+= 1
+              }
+          }
+        message: "Create proper mock objects"
+
+      # Preview Provider
+      - pattern: |
+          struct \w+_Previews: PreviewProvider {
+              static var previews: some View {
+                  \w+View\(\)
+                      \.previewLayout\(\w+\)
+                      \.previewDisplayName\(".*"\)
+              }
+          }
+        message: "Include preview providers"
+
+      # UI Tests
+      - pattern: |
+          final class \w+UITests: XCTestCase {
+              let app = XCUIApplication\(\)
+              
+              override func setUpWithError\(\) throws {
+                  continueAfterFailure = false
+                  app\.launch\(\)
+              }
+          }
+        message: "Follow UI test structure"
+
+examples:
+  - description: "View Model Test"
+    input: |
+      final class VideoPlayerViewModelTests: XCTestCase {
+          private var sut: VideoPlayerViewModel!
+          private var mockVideoService: MockVideoService!
+          
+          override func setUp() {
+              super.setUp()
+              mockVideoService = MockVideoService()
+              sut = VideoPlayerViewModel(video: testVideo, videoService: mockVideoService)
+          }
+          
+          func test_togglePlayback_whenPlaying_stopsPlayback() async {
+              // Given
+              sut.isPlaying = true
+              
+              // When
+              await sut.togglePlayback()
+              
+              // Then
+              XCTAssertFalse(sut.isPlaying)
+              XCTAssertTrue(mockVideoService.stopPlaybackCalled)
+          }
+      }
+    output: "Valid view model test"
+
+  - description: "Mock Service"
+    input: |
+      final class MockVideoService: VideoServiceProtocol {
+          var startPlaybackCalled = false
+          var stopPlaybackCalled = false
+          
+          func startPlayback() async throws {
+              startPlaybackCalled = true
+          }
+          
+          func stopPlayback() {
+              stopPlaybackCalled = true
+          }
+      }
+    output: "Valid mock object"
+
+  - description: "UI Test"
+    input: |
+      final class VideoPlayerUITests: XCTestCase {
+          let app = XCUIApplication()
+          
+          override func setUpWithError() throws {
+              continueAfterFailure = false
+              app.launch()
+          }
+          
+          func test_playButton_togglesPlayback() {
+              let playButton = app.buttons["PlayPauseButton"]
+              XCTAssertTrue(playButton.exists)
+              
+              playButton.tap()
+              XCTAssertEqual(playButton.label, "Pause")
+              
+              playButton.tap()
+              XCTAssertEqual(playButton.label, "Play")
+          }
+      }
+    output: "Valid UI test"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

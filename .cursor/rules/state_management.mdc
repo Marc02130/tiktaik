@@ -1,0 +1,118 @@
+---
+description: State Management Standards
+globs: 
+---
+# State Management & Performance Standards
+
+## View Model Requirements
+
+1. State Declaration
+```swift
+@Observable
+final class VideoViewModel {
+    // Required - Observable state with controlled access
+    private(set) var isPlaying = false
+    private(set) var currentTime: TimeInterval = 0
+    
+    // Required - Cache configuration
+    private var cache: [String: UIImage] = [:]
+    private let cacheLimit = 20
+    
+    // Recommended - Computed properties for derived state
+    var formattedTime: String {
+        timeFormatter.string(from: currentTime)
+    }
+}
+```
+
+2. Performance Optimizations
+- Mark properties as private(set) unless external mutation is needed
+- Use computed properties for derived state
+- Implement caching with size limits
+- Batch updates when possible
+- Use weak references for delegates/callbacks
+
+3. View State Management
+```swift
+struct VideoView: View {
+    // Required - Non-optional view model
+    let viewModel: VideoViewModel
+    
+    // Required - Private state for view-only data
+    @State private var localViewState = false
+    
+    // Optional - Lazy loading for lists
+    var body: some View {
+        LazyVStack {
+            ForEach(viewModel.items, id: \.id) { item in
+                ItemView(item: item)
+            }
+        }
+    }
+}
+```
+
+## Rules
+
+1. View Models
+- Must be final classes
+- Must use @Observable
+- Must implement caching for expensive operations
+- Must control state access with private(set)
+
+2. Views
+- Must use non-optional view models
+- Must make @State variables private
+- Must use LazyStacks for lists
+- Must use explicit ForEach identifiers
+
+3. Performance
+- No constant bindings for dynamic values
+- Initialize StateObjects in init
+- Implement cache size limits
+- Use weak references for delegates
+
+## Examples
+
+1. Optimized List View:
+```swift
+struct ContentListView: View {
+    let viewModel: ContentViewModel
+    
+    var body: some View {
+        LazyVStack(spacing: 0) {
+            ForEach(viewModel.items, id: \.id) { item in
+                ItemView(item: item)
+                    .id(item.id)
+            }
+        }
+    }
+}
+```
+
+2. Cached Image Loading:
+```swift
+struct CachedImageView: View {
+    let viewModel: ImageViewModel
+    
+    var body: some View {
+        AsyncImage(url: viewModel.url) { image in
+            image.onAppear {
+                viewModel.cacheImage(image)
+            }
+        }
+    }
+}
+```
+
+metadata:
+  priority: high
+  version: 2.0
+  category: 
+    - state_management
+    - performance
+  tags:
+    - swiftui
+    - viewmodel
+    - caching
+    - optimization

@@ -19,7 +19,7 @@ extension Array {
 }
 
 struct FeedView: View {
-    @StateObject private var viewModel = FeedViewModel()
+    @StateObject private var viewModel: FeedViewModel
     @State private var currentIndex = 0
     @Environment(\.userProfile) private var userProfile: UserProfile?
     private let metrics = FeedMetricsService()
@@ -28,67 +28,35 @@ struct FeedView: View {
     @State private var scrollProxy: ScrollViewProxy?
     @State private var observer: NSObjectProtocol? = nil
     
+    init() {
+        // Create the view model on the main actor
+        let viewModel = FeedViewModel()
+        self._viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
+    // Optional initializer for testing/previews
+    init(viewModel: FeedViewModel) {
+        self._viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
     var body: some View {
-        VStack(spacing: 0) {
-            // Tag selector only
-            HStack {
-                Spacer()
-                Button {
-                    showTagSelection = true
-                } label: {
-                    Image(systemName: "tag")
-                        .font(.headline)
-                        .foregroundStyle(viewModel.config.selectedTags.isEmpty ? .secondary : .primary)
-                }
-            }
-            .padding()
-            
-            if case .loading = viewModel.state {
-                ProgressView()
-            } else if case .error(let error) = viewModel.state {
-                Text(error)
-                    .foregroundStyle(.red)
-            } else if case .loaded(let videos) = viewModel.state {
-                GeometryReader { geometry in
-                    ScrollViewReader { proxy in
-                        ScrollView(.vertical, showsIndicators: false) {
-                            LazyVStack(spacing: 0) {
-                                ForEach(Array(videos.enumerated()), id: \.element.id) { index, video in
-                                    VideoPlayerView(video: video)
-                                        .frame(width: geometry.size.width, height: geometry.size.height)
-                                        .id(video.id)
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack {
+                        ForEach(Array(viewModel.videos.enumerated()), id: \.element.id) { index, video in
+                            VideoPlayerView(
+                                video: video,
+                                isVisible: currentIndex == index,
+                                onPlaybackStatusChanged: { status in
+                                    handlePlaybackStatus(status, forIndex: index)
                                 }
-                            }
+                            )
                         }
-                        .scrollTargetBehavior(.paging)
-                        .scrollTargetLayout()
-                        .scrollPosition(id: Binding(
-                            get: { videos[safe: currentIndex]?.id },
-                            set: { newId in
-                                if let index = videos.firstIndex(where: { $0.id == newId }) {
-                                    currentIndex = index
-                                }
-                            }
-                        ))
-                        .onAppear {
-                            scrollProxy = proxy
-                        }
-                        .onChange(of: currentIndex) { _, newIndex in
-                            if case .loaded(let videos) = viewModel.state {
-                                Task { @MainActor in
-                                    // Wait for any pending state updates
-                                    try? await Task.sleep(nanoseconds: 100_000_000)
-                                    
-                                    if let videoId = videos[safe: newIndex]?.id {
-                                        withAnimation {
-                                            proxy.scrollTo(videoId, anchor: .center)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .ignoresSafeArea()
                     }
+                }
+                .onChange(of: currentIndex) { newIndex in
+                    scrollToVideo(at: newIndex, proxy: proxy)
                 }
             }
         }
@@ -119,49 +87,84 @@ struct FeedView: View {
             TagSelectionView(selectedTags: $viewModel.config.selectedTags)
         }
         .onAppear {
-            observer = NotificationCenter.default.addObserver(
-                forName: .advanceToNextVideo,
-                object: nil,
-                queue: .main
-            ) { [weak viewModel] _ in
-                print("DEBUG: Advance notification received in FeedView")
-                guard let viewModel = viewModel else {
-                    print("DEBUG: ViewModel is nil")
-                    return
-                }
-                
-                Task { @MainActor in
-                    print("DEBUG: Checking state for advancement")
-                    if case .loaded(let videos) = viewModel.state {
-                        print("DEBUG: Videos loaded, count:", videos.count)
-                        print("DEBUG: Current index:", currentIndex)
-                        
-                        if currentIndex >= videos.count - 1 {
-                            print("DEBUG: At last video, can't advance")
-                            return
-                        }
-                        
-                        // Just advance to next video
-                        withAnimation {
-                            currentIndex += 1
-                            print("DEBUG: Advanced to index:", currentIndex)
-                            if let videoId = videos[safe: currentIndex]?.id,
-                               let proxy = scrollProxy {
-                                print("DEBUG: Scrolling to video:", videoId)
-                                proxy.scrollTo(videoId, anchor: .center)
-                            } else {
-                                print("DEBUG: Failed to scroll - videoId or proxy missing")
-                            }
-                        }
-                    } else {
-                        print("DEBUG: Invalid state for advancement:", viewModel.state)
-                    }
-                }
-            }
+            setupAdvanceObserver()
         }
         .onDisappear {
             if let observer = observer {
                 NotificationCenter.default.removeObserver(observer)
+            }
+        }
+    }
+    
+    private func handlePlaybackStatus(_ status: PlaybackStatus, forIndex index: Int) {
+        switch status {
+        case .finished:
+            advanceToNextVideo(from: index)
+        case .failed(let error):
+            handlePlaybackError(error, at: index)
+        case .idle, .loading, .ready, .playing, .paused:
+            break // Other states don't require feed-level handling
+        }
+    }
+    
+    private func advanceToNextVideo(from index: Int) {
+        guard index < viewModel.videos.count - 1 else { return }
+        withAnimation {
+            currentIndex = index + 1
+        }
+    }
+    
+    private func handlePlaybackError(_ error: Error, at index: Int) {
+        // Handle playback error
+        print("DEBUG: Playback error: \(error)")
+    }
+    
+    private func scrollToVideo(at index: Int, proxy: ScrollViewProxy) {
+        if let videoId = viewModel.videos[safe: index]?.id {
+            withAnimation {
+                proxy.scrollTo(videoId, anchor: .center)
+            }
+        }
+    }
+    
+    private func setupAdvanceObserver() {
+        observer = NotificationCenter.default.addObserver(
+            forName: .advanceToNextVideo,
+            object: nil,
+            queue: .main
+        ) { [weak viewModel] _ in
+            print("DEBUG: Advance notification received in FeedView")
+            guard let viewModel = viewModel else {
+                print("DEBUG: ViewModel is nil")
+                return
+            }
+            
+            Task { @MainActor in
+                print("DEBUG: Checking state for advancement")
+                if case .loaded(let videos) = viewModel.state {
+                    print("DEBUG: Videos loaded, count:", videos.count)
+                    print("DEBUG: Current index:", currentIndex)
+                    
+                    if currentIndex >= videos.count - 1 {
+                        print("DEBUG: At last video, can't advance")
+                        return
+                    }
+                    
+                    // Just advance to next video
+                    withAnimation {
+                        currentIndex += 1
+                        print("DEBUG: Advanced to index:", currentIndex)
+                        if let videoId = videos[safe: currentIndex]?.id,
+                           let proxy = scrollProxy {
+                            print("DEBUG: Scrolling to video:", videoId)
+                            proxy.scrollTo(videoId, anchor: .center)
+                        } else {
+                            print("DEBUG: Failed to scroll - videoId or proxy missing")
+                        }
+                    }
+                } else {
+                    print("DEBUG: Invalid state for advancement:", viewModel.state)
+                }
             }
         }
     }

@@ -82,6 +82,12 @@ final class VideoEditViewModel: ObservableObject {
     @Published private(set) var videoWasEdited = false
     @Published private(set) var editedVideoURL: URL?
     
+    // Add subtitle support
+    @Published private(set) var subtitleViewModel: VideoSubtitleViewModel?
+    
+    // Add save state
+    @Published private(set) var isSavingSubtitles = false
+    
     /// Initializes view model with video ID
     /// - Parameter videoId: Unique identifier of video to edit
     init(videoId: String, refreshTrigger: RefreshTrigger, video: Video) {
@@ -91,6 +97,15 @@ final class VideoEditViewModel: ObservableObject {
         self._cropRect = Published(initialValue: CGRect(x: 0, y: 0, width: 1, height: CropConfig.aspectRatio))
         self.videoEditService = VideoEditService()
         self.video = video
+        
+        // Initialize subtitle view model
+        if let videoURL = videoURL,
+           let url = URL(string: videoURL) {
+            self.subtitleViewModel = VideoSubtitleViewModel.getViewModel(
+                for: videoId,
+                videoURL: url
+            )
+        }
     }
     
     /// Loads video data from Firestore
@@ -418,7 +433,7 @@ final class VideoEditViewModel: ObservableObject {
             progress = 0.2
             let url = URL(string: videoURL)!
             
-            // Crop video
+            // Crop video using new State API
             let croppedURL = try await videoEditService.cropVideo(
                 url: url,
                 rect: cropRect,
@@ -496,6 +511,53 @@ final class VideoEditViewModel: ObservableObject {
             set: { self.updateTags($0) }
         )
     }
+    
+    // Add save method
+    func saveSubtitles(_ subtitles: [VideoSubtitle]) async throws {
+        isSavingSubtitles = true
+        
+        defer { isSavingSubtitles = false }
+        
+        // Update subtitles in Firestore
+        let db = Firestore.firestore()
+        let batch = db.batch()
+        
+        // Delete existing subtitles
+        let subtitlesRef = db.collection(VideoSubtitle.collectionName)
+        let existingQuery = subtitlesRef.whereField("videoId", isEqualTo: video.id)
+        let existing = try await existingQuery.getDocuments()
+        existing.documents.forEach { doc in
+            batch.deleteDocument(doc.reference)
+        }
+        
+        // Add new subtitles
+        subtitles.forEach { subtitle in
+            let newRef = subtitlesRef.document()
+            // Create new subtitle with updated id and videoId
+            let newSubtitle = VideoSubtitle(
+                id: newRef.documentID,
+                videoId: video.id,
+                startTime: subtitle.startTime,
+                endTime: subtitle.endTime,
+                text: subtitle.text,
+                isEdited: subtitle.isEdited,
+                createdAt: subtitle.createdAt
+            )
+            batch.setData(newSubtitle.asDictionary, forDocument: newRef)
+        }
+        
+        try await batch.commit()
+    }
+    
+    private func setupSubtitleViewModel() {
+        if let videoURL = videoURL,
+           let url = URL(string: videoURL) {
+            subtitleViewModel = VideoSubtitleViewModel.getViewModel(
+                for: videoId,
+                videoURL: url
+            )
+        }
+    }
 }
 
 // Helper for timeouts
@@ -521,6 +583,7 @@ enum VideoEditError: LocalizedError {
     case updateFailed
     case timeout
     case exportFailed
+    case invalidURL
     
     var errorDescription: String? {
         switch self {
@@ -532,6 +595,8 @@ enum VideoEditError: LocalizedError {
             return "Operation timed out"
         case .exportFailed:
             return "Failed to export video"
+        case .invalidURL:
+            return "Invalid video URL format"
         }
     }
 }

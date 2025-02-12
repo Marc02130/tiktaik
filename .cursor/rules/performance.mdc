@@ -1,0 +1,88 @@
+---
+description: Performance Optimization Standards
+globs: 
+---
+ # Performance Optimization Standards
+
+Rules for optimizing SwiftUI views and data handling.
+
+<rule>
+name: performance_optimization
+description: Standards for performance optimization in SwiftUI
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(Lazy[VH]Stack|ForEach|List|ScrollView)"
+
+actions:
+  - type: enforce
+    patterns:
+      # Lazy Loading
+      - pattern: |
+          (LazyVStack|LazyHStack|LazyVGrid)\(.*\) {
+            ForEach
+        message: "Use lazy containers for large lists"
+
+      # ForEach Identifiers
+      - pattern: |
+          ForEach\(\w+\) { (?!id:)
+        message: "ForEach must use explicit identifiers"
+
+      # View Updates
+      - pattern: |
+          \.constant\([^)]+\)
+        message: "Avoid constant bindings for dynamic values"
+
+      # Memory Management
+      - pattern: |
+          @StateObject private var \w+: \w+ = \w+\(\)
+        message: "Initialize StateObjects in init when possible"
+
+      # Cache Handling
+      - pattern: |
+          private var cache: \[.+\] = \[\]
+          private let cacheLimit: Int
+        message: "Implement cache size limits"
+
+examples:
+  - description: "Lazy Loading List"
+    input: |
+      ScrollView {
+          LazyVStack(spacing: 0) {
+              ForEach(videos, id: \.id) { video in
+                  VideoPlayerView(video: video)
+              }
+          }
+      }
+    output: "Valid lazy loading implementation"
+
+  - description: "Cached Image Loading"
+    input: |
+      struct CachedAsyncImage: View {
+          private let url: URL
+          private let cache: ImageCache
+          
+          var body: some View {
+              AsyncImage(url: url) { image in
+                  image.onAppear {
+                      cache.store(image, for: url)
+                  }
+              }
+          }
+      }
+    output: "Valid image caching"
+
+  - description: "Optimized ForEach"
+    input: |
+      ForEach(videos.prefix(20), id: \.id) { video in
+          VideoRow(video: video)
+              .id(video.id) // Stable identity
+      }
+    output: "Valid ForEach optimization"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

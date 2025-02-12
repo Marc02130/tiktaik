@@ -16,32 +16,42 @@ import Combine
 import FirebaseFirestore
 
 @MainActor
-final class VideoPlayerViewModel: ObservableObject {
+class VideoPlayerViewModel: ObservableObject {
     /// Current video player instance
-    @Published var player: AVPlayer?
+    @Published private(set) var player: AVPlayer?
     /// Current error message if any
     @Published private(set) var error: String?
     /// Loading state
     @Published private(set) var isLoading = false
     
-    @Published var isLiked = false
-    @Published var likes = 0
-    @Published var comments = 0
-    @Published var shares = 0
+    @Published private(set) var playbackStatus: PlaybackStatus = .idle
+    @Published private(set) var currentTime: TimeInterval = 0
     
-    private let cache = VideoCache.shared
-    private let video: Video  // Keep as let since getVideoURL is no longer mutating
+    // Video metadata
+    @Published private(set) var creatorUsername: String = ""
+    @Published private(set) var stats: VideoStats = .empty
     
-    init(video: Video) {
+    private let video: Video
+    private let videoCache: VideoCache
+    
+    private var playerItem: AVPlayerItem?
+    private var timeObserverToken: Any?
+    
+    @Published private(set) var showSubtitles: Bool = false
+    
+    init(video: Video, cache: VideoCache = .shared) {
         self.video = video
-        self.likes = video.stats.likes
-        self.comments = video.stats.commentsCount
-        self.shares = video.stats.shares
+        self.videoCache = cache
+        self.stats = VideoStats(
+            likes: video.stats.likes,
+            commentsCount: video.stats.commentsCount,
+            shares: video.stats.shares,
+            views: video.stats.views
+        )
         
-        // Remove direct URL initialization since it's using storageUrl incorrectly
-        // Instead, start loading video immediately
+        // Start loading video immediately
         Task {
-            await loadVideo()
+            await loadVideo() // Remove try since loadVideo handles errors internally
         }
         
         // Keep existing notification observer
@@ -68,7 +78,7 @@ final class VideoPlayerViewModel: ObservableObject {
     func preloadVideo() async {
         do {
             // Check cache first
-            if cache.getCachedPlayer(for: video.id) != nil {
+            if videoCache.getCachedPlayer(for: video.id) != nil {
                 // Already cached, nothing to do
                 return
             }
@@ -79,7 +89,7 @@ final class VideoPlayerViewModel: ObservableObject {
             let player = AVPlayer(playerItem: playerItem)
             
             // Cache the player for later use
-            cache.cachePlayer(id: video.id, player: player)
+            videoCache.cachePlayer(id: video.id, player: player)
             
             // Add end notification observer
             NotificationCenter.default.addObserver(
@@ -100,43 +110,67 @@ final class VideoPlayerViewModel: ObservableObject {
         }
     }
     
+    // Make seek async since it can fail
+    func seekToZero() async {
+        let time = CMTime.zero
+        await player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+    
     /// Loads video from Firebase Storage
     /// - Parameter video: Video to load
     func loadVideo() async {
+        guard !isLoading else { return }
+        isLoading = true
+        updatePlaybackState(.loading)
+        
         do {
-            await MainActor.run {
-                isLoading = true
-                error = nil
-            }
+            print("DEBUG: Starting to load video: \(video.id)")
+            error = nil
             
             // Check cache first
-            if let cachedPlayer = cache.getCachedPlayer(for: video.id) {
-                await MainActor.run {
-                    self.player = cachedPlayer
-                    self.isLoading = false
-                }
+            if let cachedPlayer = videoCache.getCachedPlayer(for: video.id) {
+                print("DEBUG: Using cached player for video: \(video.id)")
+                self.player = cachedPlayer
+                self.isLoading = false
                 
-                // Add end notification observer
+                // Reset item
+                let currentItem = cachedPlayer.currentItem
+                cachedPlayer.replaceCurrentItem(with: nil)
+                cachedPlayer.replaceCurrentItem(with: currentItem)
+                
+                // Add observer
                 NotificationCenter.default.addObserver(
                     self,
                     selector: #selector(videoDidFinish),
                     name: .AVPlayerItemDidPlayToEndTime,
-                    object: cachedPlayer.currentItem
+                    object: currentItem
                 )
                 
-                // Start playback immediately for cached player
-                await cachedPlayer.seek(to: .zero)
-                cachedPlayer.play()
+                // Prepare for playback
+                await seekToZero() // Make seek async
+                print("DEBUG: Cached player ready for video: \(video.id)")
+                updatePlaybackState(.ready)
                 return
             }
             
-            // Get fresh URL and create player
+            // Get URL in background
+            print("DEBUG: Getting video URL for: \(video.id)")
             let url = try await video.getVideoURL()
-            let playerItem = AVPlayerItem(url: url)
-            let player = AVPlayer(playerItem: playerItem)
-            cache.cachePlayer(id: video.id, player: player)
+            print("DEBUG: Got video URL: \(url)")
             
-            // Add end notification observer
+            // Create player on main thread
+            let asset = AVURLAsset(url: url)
+            let playerItem = AVPlayerItem(asset: asset)
+            let newPlayer = AVPlayer(playerItem: playerItem)
+            
+            // Set up player
+            newPlayer.automaticallyWaitsToMinimizeStalling = true
+            
+            // Cache player
+            videoCache.cachePlayer(id: video.id, player: newPlayer)
+            print("DEBUG: Created and cached new player for video: \(video.id)")
+            
+            // Add observer
             NotificationCenter.default.addObserver(
                 self,
                 selector: #selector(videoDidFinish),
@@ -144,77 +178,125 @@ final class VideoPlayerViewModel: ObservableObject {
                 object: playerItem
             )
             
-            await MainActor.run {
-                self.player = player
-                self.isLoading = false
-            }
+            // Update state
+            self.playerItem = playerItem
+            self.player = newPlayer
+            self.isLoading = false
             
-            // Start playback immediately for new player
-            player.play()
+            print("DEBUG: New player ready for video: \(video.id)")
             
+            updatePlaybackState(.ready)
         } catch {
-            print("Error loading video:", error)
-            await MainActor.run {
-                self.error = error.localizedDescription
-                self.isLoading = false
-            }
+            print("ERROR: Failed to load video \(video.id): \(error)")
+            self.error = error.localizedDescription
+            self.isLoading = false
+            updatePlaybackState(.failed(error))
         }
     }
     
     /// Cleanup resources
     func cleanup() {
-        player?.pause()
+        print("DEBUG: Cleaning up video: \(video.id)")
+        stopPlayback()
+        player?.replaceCurrentItem(with: nil)
         player = nil
+        playerItem = nil
+        playbackStatus = .idle
     }
     
     func startPlayback() {
-        player?.seek(to: .zero) // Reset to start
+        guard case .ready = playbackStatus else { return }
         player?.play()
+        playbackStatus = .playing
+    }
+    
+    private func loadAndPlay() {
+        Task {
+            playbackStatus = .loading
+            do {
+                await loadVideo()  // Remove try since loadVideo handles errors internally
+                player?.play()
+                playbackStatus = .playing
+            } catch {
+                playbackStatus = .failed(error)
+            }
+        }
     }
     
     func stopPlayback() {
+        print("DEBUG: Stopping playback for video: \(video.id)")
         player?.pause()
-    }
-    
-    @MainActor
-    func toggleLike() {
-        isLiked.toggle()
-        Task {
-            do {
-                let db = Firestore.firestore()
-                try await db.collection(Video.collectionName)
-                    .document(video.id)
-                    .updateData([
-                        "stats.likes": FieldValue.increment(Int64(isLiked ? 1 : -1))
-                    ] as [String: Any])
-            } catch {
-                print("Error updating like:", error)
-                isLiked.toggle()
-            }
+        player?.seek(to: .zero)
+        
+        // Remove time observer
+        if let token = timeObserverToken {
+            player?.removeTimeObserver(token)
+            timeObserverToken = nil
         }
     }
     
-    @MainActor
-    func incrementViews() {
-        Task {
-            do {
-                let db = Firestore.firestore()
-                try await db.collection(Video.collectionName)
-                    .document(video.id)
-                    .updateData([
-                        "stats.views": FieldValue.increment(Int64(1))
-                    ] as [String: Any])
-            } catch {
-                print("Error incrementing views:", error)
-            }
+    func updatePlaybackState(_ newState: PlaybackStatus) {
+        Task { @MainActor in
+            playbackStatus = newState
+            
+            // Log state changes
+            print("DEBUG: Video \(video.id) playback state changed to: \(newState)")
         }
     }
     
-    func showComments() {
-        // Implement comments functionality
+    private func setupTimeObserver() {
+        // Move time observation logic here
     }
     
-    func shareVideo() {
-        // Implement share functionality
+    func pausePlayback() {
+        player?.pause()
+        playbackStatus = .paused
+    }
+    
+    func updateShowSubtitles(_ show: Bool) {
+        showSubtitles = show
+    }
+    
+    @MainActor
+    func loadVideo(from url: URL) async {
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let asset = AVAsset(url: url)
+            let playerItem = AVPlayerItem(asset: asset)
+            player = AVPlayer(playerItem: playerItem)
+            player?.automaticallyWaitsToMinimizeStalling = false
+            setupTimeObserver()
+            playbackStatus = .ready
+        } catch {
+            print("Error loading video:", error)
+            playbackStatus = .failed(error)
+        }
+    }
+}
+
+enum PlaybackStatus: Equatable {
+    case idle
+    case loading
+    case ready
+    case playing
+    case paused
+    case finished
+    case failed(Error)
+    
+    static func == (lhs: PlaybackStatus, rhs: PlaybackStatus) -> Bool {
+        switch (lhs, rhs) {
+        case (.idle, .idle),
+             (.loading, .loading),
+             (.ready, .ready),
+             (.playing, .playing),
+             (.finished, .finished):
+            return true
+        case (.failed(let lhsError), .failed(let rhsError)):
+            return lhsError.localizedDescription == rhsError.localizedDescription
+        default:
+            return false
+        }
     }
 }

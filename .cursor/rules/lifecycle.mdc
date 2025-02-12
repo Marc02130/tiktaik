@@ -1,0 +1,106 @@
+---
+description: SwiftUI Lifecycle Standards
+globs: 
+---
+ # SwiftUI Lifecycle Standards
+
+Rules for managing app, scene, and view lifecycle in SwiftUI.
+
+<rule>
+name: swiftui_lifecycle
+description: Standards for SwiftUI lifecycle management
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(App|Scene|View|onAppear|onDisappear)"
+
+actions:
+  - type: enforce
+    patterns:
+      # App Entry Point
+      - pattern: |
+          @main
+          struct \w+App: App {
+              var body: some Scene {
+                  WindowGroup {
+        message: "App must use @main and WindowGroup"
+
+      # Scene Configuration
+      - pattern: |
+          \.scene\s*{
+              WindowGroup {
+                  \w+View\(\)
+                      \.environmentObject\(
+        message: "Scenes must configure environment objects"
+
+      # View Lifecycle
+      - pattern: |
+          \.on(Appear|Disappear)\s*{
+              (async )?{
+                  .+
+              }
+          }
+        message: "Use lifecycle methods for setup/cleanup"
+
+      # Task Management
+      - pattern: |
+          @State private var \w+Task: Task<Void, Never>\?
+        message: "Track async tasks for proper cancellation"
+
+examples:
+  - description: "App Configuration"
+    input: |
+      @main
+      struct TIKtAIkApp: App {
+          @StateObject private var authViewModel = AuthViewModel()
+          
+          var body: some Scene {
+              WindowGroup {
+                  MainView()
+                      .environmentObject(authViewModel)
+              }
+          }
+      }
+    output: "Valid app configuration"
+
+  - description: "View Lifecycle"
+    input: |
+      struct VideoPlayerView: View {
+          let viewModel: VideoPlayerViewModel
+          @State private var playerTask: Task<Void, Never>?
+          
+          var body: some View {
+              VideoPlayer(player: viewModel.player)
+                  .onAppear {
+                      playerTask = Task {
+                          await viewModel.startPlayback()
+                      }
+                  }
+                  .onDisappear {
+                      playerTask?.cancel()
+                      viewModel.stopPlayback()
+                  }
+          }
+      }
+    output: "Valid view lifecycle management"
+
+  - description: "Scene Management"
+    input: |
+      struct MainScene: Scene {
+          @StateObject private var router = Router()
+          
+          var body: some Scene {
+              WindowGroup {
+                  MainTabView(router: router)
+                      .environmentObject(router)
+              }
+          }
+      }
+    output: "Valid scene configuration"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

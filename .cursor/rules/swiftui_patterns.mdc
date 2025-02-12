@@ -1,0 +1,120 @@
+# SwiftUI Pattern Standards
+
+Rules for implementing SwiftUI-specific design patterns and communication.
+
+<rule>
+name: swiftui_patterns
+description: Standards for SwiftUI patterns and communication
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(@Binding|PreferenceKey|@Environment)"
+
+actions:
+  - type: enforce
+    patterns:
+      # Parent-Child Binding
+      - pattern: |
+          struct \w+View: View {
+              @Binding var \w+: \w+
+              
+              var body: some View {
+                  Button\(action: \{
+                      \w+\.toggle\(\)
+                  \}\)
+              }
+          }
+        message: "Use Binding for two-way data flow"
+
+      # PreferenceKey Definition
+      - pattern: |
+          struct \w+Key: PreferenceKey {
+              static var defaultValue: \w+
+              static func reduce\(value: inout \w+, nextValue: \(\) -> \w+\)
+          }
+        message: "Define PreferenceKey for child-to-parent communication"
+
+      # Environment Dependencies
+      - pattern: |
+          @Environment\(\\.\w+\) private var \w+
+          @EnvironmentObject private var \w+: \w+
+        message: "Use Environment for dependency injection"
+
+      # View Builders
+      - pattern: |
+          @ViewBuilder
+          func \w+\(\w+: \w+\) -> some View
+        message: "Use ViewBuilder for complex view composition"
+
+      # Custom Environment Keys
+      - pattern: |
+          private struct \w+Key: EnvironmentKey {
+              static let defaultValue: \w+
+          }
+          
+          extension EnvironmentValues {
+              var \w+: \w+ {
+                  get { self\[\\w+Key.self\] }
+                  set { self\[\\w+Key.self\] = newValue }
+              }
+          }
+        message: "Define custom environment keys properly"
+
+examples:
+  - description: "Two-way Binding"
+    input: |
+      struct VideoControlsView: View {
+          @Binding var isPlaying: Bool
+          let onSeek: (TimeInterval) -> Void
+          
+          var body: some View {
+              Button {
+                  isPlaying.toggle()
+              } label: {
+                  Image(systemName: isPlaying ? "pause" : "play")
+              }
+          }
+      }
+    output: "Valid binding usage"
+
+  - description: "PreferenceKey Communication"
+    input: |
+      struct VideoTimeKey: PreferenceKey {
+          static var defaultValue: TimeInterval = 0
+          
+          static func reduce(value: inout TimeInterval, nextValue: () -> TimeInterval) {
+              value = nextValue()
+          }
+      }
+      
+      struct VideoPlayerView: View {
+          var body: some View {
+              VideoPlayer(player: player)
+                  .preference(key: VideoTimeKey.self, value: player.currentTime().seconds)
+          }
+      }
+    output: "Valid preference key usage"
+
+  - description: "Environment Injection"
+    input: |
+      struct ContentView: View {
+          @EnvironmentObject private var authViewModel: AuthViewModel
+          @Environment(\.colorScheme) private var colorScheme
+          
+          var body: some View {
+              if authViewModel.isAuthenticated {
+                  MainView()
+                      .preferredColorScheme(colorScheme)
+              } else {
+                  LoginView()
+              }
+          }
+      }
+    output: "Valid environment usage"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

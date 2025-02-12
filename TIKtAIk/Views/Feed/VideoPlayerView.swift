@@ -23,89 +23,88 @@ extension NSNotification.Name {
 
 struct VideoPlayerView: View {
     let video: Video
-    @StateObject private var viewModel: VideoPlayerViewModel
-    @State private var creatorUsername: String = ""
+    let isVisible: Bool
+    let onPlaybackStatusChanged: (PlaybackStatus) -> Void
     
-    init(video: Video) {
+    @StateObject private var viewModel: VideoPlayerViewModel
+    @StateObject private var statsViewModel: VideoStatsViewModel
+    @StateObject private var subtitleViewModel: VideoSubtitleViewModel
+    @AppStorage("showSubtitles") private var showSubtitles = true
+    
+    init(video: Video, isVisible: Bool, onPlaybackStatusChanged: @escaping (PlaybackStatus) -> Void) {
         self.video = video
+        self.isVisible = isVisible
+        self.onPlaybackStatusChanged = onPlaybackStatusChanged
+        
+        // Initialize view models
         self._viewModel = StateObject(wrappedValue: VideoPlayerViewModel(video: video))
+        self._statsViewModel = StateObject(wrappedValue: VideoStatsViewModel(video: video))
+        self._subtitleViewModel = StateObject(wrappedValue: VideoSubtitleViewModel(
+            videoId: video.id,
+            videoURL: URL(string: "placeholder")!
+        ))
     }
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Video Player
-                VideoPlayer(player: viewModel.player)
-                    .edgesIgnoringSafeArea(.all)
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                
-                // Overlay Controls
-                VStack {
-                    Spacer()
-                    
-                    // Video Info
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(video.title)
-                                .font(.headline)
-                            Text(creatorUsername.isEmpty ? "@\(video.userId)" : "@\(creatorUsername)")
-                                .font(.subheadline)
+                if let player = viewModel.player {
+                    VideoPlayer(player: player)
+                        .onAppear {
+                            // Start playback when view appears if visible
+                            if isVisible {
+                                viewModel.startPlayback()
+                            }
                         }
-                        .foregroundColor(.white)
-                        .shadow(radius: 2)
-                        
-                        Spacer()
-                        
-                        // Interaction Buttons
-                        VStack(spacing: 16) {
-                            InteractionButton(
-                                icon: "heart.fill",
-                                count: viewModel.likes,
-                                isActive: viewModel.isLiked,
-                                action: viewModel.toggleLike
-                            )
-                            
-                            InteractionButton(
-                                icon: "message.fill",
-                                count: viewModel.comments,
-                                action: viewModel.showComments
-                            )
-                            
-                            InteractionButton(
-                                icon: "square.and.arrow.up.fill",
-                                count: viewModel.shares,
-                                action: viewModel.shareVideo
-                            )
-                        }
-                    }
-                    .padding()
+                } else {
+                    // Show loading state
+                    ProgressView()
                 }
-            }
-            .onAppear {
-                print("DEBUG: VideoPlayerView appeared for video:", video.id)
-                viewModel.startPlayback()
-                viewModel.incrementViews()
-                fetchUsername()
-            }
-            .onDisappear {
-                viewModel.stopPlayback()
+                
+                if shouldShowSubtitles {
+                    SubtitleOverlayView(
+                        subtitles: subtitleViewModel.subtitles,
+                        currentTime: viewModel.currentTime,
+                        preferences: subtitleViewModel.preferences
+                    )
+                }
+                
+                VideoControlsOverlay(
+                    video: video,
+                    stats: statsViewModel.stats,
+                    onLike: statsViewModel.toggleLike,
+                    onComment: statsViewModel.showComments,
+                    onShare: statsViewModel.shareVideo
+                )
             }
         }
-        .aspectRatio(9/16, contentMode: .fit)
+        .onChange(of: isVisible) { oldValue, newValue in
+            if newValue {
+                viewModel.startPlayback()
+                if !oldValue {
+                    statsViewModel.incrementViews()
+                }
+            } else {
+                viewModel.pausePlayback()
+            }
+        }
+        .onChange(of: viewModel.playbackStatus) { status in
+            onPlaybackStatusChanged(status)
+        }
+        .task {
+            // Load video URL and initialize player
+            do {
+                let videoURL = try await video.getVideoURL()
+                await viewModel.loadVideo(from: videoURL)
+                await subtitleViewModel.updateVideoURL(videoURL)
+            } catch {
+                print("Error loading video:", error)
+            }
+        }
     }
     
-    private func fetchUsername() {
-        Task {
-            do {
-                let doc = try await Firestore.firestore()
-                    .collection("users")
-                    .document(video.userId)
-                    .getDocument()
-                creatorUsername = doc.get("username") as? String ?? ""
-            } catch {
-                print("Error fetching username:", error)
-            }
-        }
+    private var shouldShowSubtitles: Bool {
+        showSubtitles && !subtitleViewModel.subtitles.isEmpty
     }
 }
 

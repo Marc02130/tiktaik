@@ -1,0 +1,95 @@
+# ID Standards
+
+Rules for consistent ID naming and usage across the project.
+
+<rule>
+name: id_standards
+description: Standards for identifier naming and usage
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(Id|ID|userId|creatorId)"
+
+actions:
+  - type: enforce
+    patterns:
+      # User ID References
+      - pattern: |
+          (var|let) \w*[Cc]reatorId
+        message: "Use userId instead of creatorId. Creator is a property of user"
+
+      # ID Property Naming
+      - pattern: |
+          (var|let) id: String
+        message: "Use descriptive ID names (e.g., userId, videoId)"
+
+      # Model ID Requirements
+      - pattern: |
+          struct \w+: Identifiable {
+              let id: String
+              let userId: String
+        message: "Include both id and userId in user-owned models"
+
+      # Firebase References
+      - pattern: |
+          \.document\(userId\)
+          \.collection\("\w+"\)
+        message: "Use userId for document references"
+
+      # ID Generation
+      - pattern: |
+          UUID\(\)\.uuidString
+        message: "Use UUID for local ID generation"
+
+examples:
+  - description: "User-Owned Model"
+    input: |
+      struct Video: Identifiable {
+          let id: String
+          let userId: String  // Owner of the video
+          let title: String
+          let description: String?
+          
+          var isCreator: Bool {
+              userId == Auth.auth().currentUser?.uid
+          }
+      }
+    output: "Valid user-owned model"
+
+  - description: "Firebase Query"
+    input: |
+      func fetchUserVideos() async throws -> [Video] {
+          let userId = Auth.auth().currentUser?.uid ?? ""
+          let snapshot = try await db.collection("videos")
+              .whereField("userId", isEqualTo: userId)
+              .getDocuments()
+          return try snapshot.documents.map { try Video.from($0) }
+      }
+    output: "Valid Firebase query"
+
+  - description: "Model Creation"
+    input: |
+      func createVideo(title: String) async throws -> Video {
+          let video = Video(
+              id: UUID().uuidString,
+              userId: Auth.auth().currentUser?.uid ?? "",
+              title: title,
+              description: nil
+          )
+          try await saveVideo(video)
+          return video
+      }
+    output: "Valid model creation"
+
+metadata:
+  priority: high
+  version: 1.0
+
+# Additional Rules
+- Never use creatorId - always use userId
+- Always include userId in user-owned models
+- Use descriptive ID property names
+- Use String type for IDs
+- Document ID relationships in models 

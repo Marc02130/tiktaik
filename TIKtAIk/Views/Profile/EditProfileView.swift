@@ -56,6 +56,7 @@ struct EditProfileView: View {
                 }
                 
                 Section("Feed Preferences") {
+                    Toggle("Show Subtitles", isOn: $viewModel.showSubtitles)
                     Toggle("Creator Mode", isOn: $viewModel.isCreator)
                         .onChange(of: viewModel.isCreator) { oldValue, newValue in
                             Task {
@@ -96,6 +97,7 @@ final class EditProfileViewModel: ObservableObject {
     @Published var allowComments: Bool
     @Published private(set) var isSaving = false
     @Published var isCreator: Bool
+    @Published var showSubtitles: Bool
     
     private let profile: UserProfile
     
@@ -108,6 +110,7 @@ final class EditProfileViewModel: ObservableObject {
         self.notificationsEnabled = profile.settings.notificationsEnabled
         self.allowComments = profile.settings.allowComments
         self.isCreator = profile.isCreator
+        self.showSubtitles = profile.settings.showSubtitles
     }
     
     @MainActor
@@ -126,7 +129,8 @@ final class EditProfileViewModel: ObservableObject {
             settings: UserProfile.UserSettings(
                 isPrivate: isPrivate,
                 notificationsEnabled: notificationsEnabled,
-                allowComments: allowComments
+                allowComments: allowComments,
+                showSubtitles: showSubtitles
             ),
             createdAt: profile.createdAt,
             updatedAt: Date(),

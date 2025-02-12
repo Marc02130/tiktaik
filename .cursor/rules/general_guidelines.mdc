@@ -1,0 +1,87 @@
+# General Guidelines Standards
+
+Rules for maintaining code quality and consistency across the project.
+
+<rule>
+name: general_guidelines
+description: Standards for code quality and best practices
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: ".*"
+
+actions:
+  - type: enforce
+    patterns:
+      # Version Requirements
+      - pattern: |
+          import SwiftUI
+          import FirebaseFirestore
+          import FirebaseStorage
+        message: "Use latest Firebase and SwiftUI imports"
+
+      # Error Handling
+      - pattern: |
+          (try|throw|throws|catch|async).*
+          do \{
+              .+
+          \} catch \{
+              .+
+          \}
+        message: "Implement proper error handling"
+
+      # Documentation
+      - pattern: |
+          ///.*
+          /// - Parameters:.*
+          /// - Returns:.*
+          /// - Throws:.*
+        message: "Include complete documentation"
+
+      # TODO Prevention
+      - pattern: "// TODO:|//TODO:|// FIXME:|//FIXME:"
+        message: "Resolve TODOs before committing"
+
+      # Debug Logging
+      - pattern: |
+          print\("DEBUG: .*"\)
+        message: "Use standardized debug logging format"
+
+examples:
+  - description: "Error Handling"
+    input: |
+      do {
+          let video = try await videoService.fetchVideo(id: videoId)
+          self.video = video
+      } catch VideoError.notFound {
+          self.error = "Video not found"
+      } catch {
+          self.error = error.localizedDescription
+      }
+    output: "Valid error handling"
+
+  - description: "Documentation"
+    input: |
+      /// Fetches video data from storage
+      /// - Parameters:
+      ///   - videoId: Unique identifier of the video
+      /// - Returns: Video object with metadata
+      /// - Throws: VideoError if fetch fails
+      func fetchVideo(id: String) async throws -> Video {
+          // Implementation
+      }
+    output: "Valid documentation"
+
+  - description: "Debug Logging"
+    input: |
+      print("DEBUG: Loading video from storage path:", video.storageUrl)
+      print("DEBUG: Storage bucket:", storageRef.bucket)
+      print("DEBUG: Storage full path:", storageRef.fullPath)
+    output: "Valid debug logging"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

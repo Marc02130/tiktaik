@@ -33,76 +33,184 @@ struct VideoEditView: View {
     @State private var isMuted = false
     @State private var showError = false
     @State private var errorMessage: String?
+    @State private var showSubtitleEditor = false
+    @State private var subtitles: [VideoSubtitle] = []
     
     var body: some View {
         NavigationView {
-            Group {
-                if viewModel.isLoading {
-                    ProgressView("Loading video details...")
-                } else {
-                    Form {
-                        videoPreviewSection
-                        videoDetailsSection
-                        tagsSection
-                        privacySection
-                        editVideoSection
-                    }
-                }
+            MainContent(
+                viewModel: viewModel,
+                isPlaying: $isPlaying,
+                isMuted: $isMuted,
+                showTagSelection: $showTagSelection,
+                showTrimView: $showTrimView,
+                showCropView: $showCropView,
+                showThumbnailView: $showThumbnailView,
+                showSubtitleEditor: $showSubtitleEditor,
+                showError: $showError,
+                errorMessage: $errorMessage,
+                subtitles: $subtitles,
+                dismiss: dismiss
+            )
+        }
+    }
+}
+
+// Renamed from ContentView to MainContent to avoid conflict
+private struct MainContent: View {
+    @ObservedObject var viewModel: VideoEditViewModel
+    @Binding var isPlaying: Bool
+    @Binding var isMuted: Bool
+    @Binding var showTagSelection: Bool
+    @Binding var showTrimView: Bool
+    @Binding var showCropView: Bool
+    @Binding var showThumbnailView: Bool
+    @Binding var showSubtitleEditor: Bool
+    @Binding var showError: Bool
+    @Binding var errorMessage: String?
+    @Binding var subtitles: [VideoSubtitle]
+    let dismiss: DismissAction
+    
+    var body: some View {
+        Group {
+            if viewModel.isLoading {
+                ProgressView("Loading video details...")
+            } else {
+                FormContent(
+                    viewModel: viewModel,
+                    isPlaying: $isPlaying,
+                    isMuted: $isMuted,
+                    showTagSelection: $showTagSelection,
+                    showTrimView: $showTrimView,
+                    showCropView: $showCropView,
+                    showThumbnailView: $showThumbnailView,
+                    showSubtitleEditor: $showSubtitleEditor
+                )
             }
-            .navigationTitle("Edit Video")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbarContent }
-            .alert("Error Saving", isPresented: $showError) {
-                Button("OK", action: {})
-            } message: {
-                if let message = errorMessage {
-                    Text(message)
-                }
+        }
+        .navigationTitle("Edit Video")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            CustomToolbarContent(
+                viewModel: viewModel,
+                dismiss: dismiss,
+                showError: $showError,
+                errorMessage: $errorMessage
+            )
+        }
+        .alert("Error Saving", isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            if let message = errorMessage {
+                Text(message)
             }
-            .sheet(isPresented: $showTagSelection) {
-                TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
+        }
+        .sheet(isPresented: $showTagSelection) {
+            TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
+        }
+        .sheet(isPresented: $showTrimView) {
+            if let videoURL = viewModel.videoURL {
+                VideoTrimView(
+                    timeRange: $viewModel.timeRange,
+                    duration: viewModel.duration,
+                    thumbnails: viewModel.thumbnails ?? [],
+                    onPreview: viewModel.previewTime,
+                    onSave: { Task { await viewModel.trimVideo() } },
+                    viewModel: viewModel
+                )
             }
-            .sheet(isPresented: $showTrimView) {
-                if let videoURL = viewModel.videoURL {
-                    VideoTrimView(
-                        timeRange: $viewModel.timeRange,
-                        duration: viewModel.duration,
-                        thumbnails: viewModel.thumbnails ?? [],
-                        onPreview: { time in
-                            viewModel.previewTime(time)
-                        },
-                        onSave: {
-                            Task {
-                                await viewModel.trimVideo()
-                            }
-                        },
-                        viewModel: viewModel
-                    )
-                }
+        }
+        .sheet(isPresented: $showCropView) {
+            if let videoURL = viewModel.videoURL,
+               let thumbnail = viewModel.thumbnails?.first {
+                VideoCropView(
+                    cropRect: $viewModel.cropRect,
+                    thumbnail: thumbnail,
+                    onSave: { Task { await viewModel.cropVideo() } },
+                    viewModel: viewModel
+                )
             }
-            .sheet(isPresented: $showCropView) {
-                if let videoURL = viewModel.videoURL,
-                   let thumbnail = viewModel.thumbnails?.first {
-                    VideoCropView(
-                        cropRect: $viewModel.cropRect,
-                        thumbnail: thumbnail,
-                        onSave: {
-                            Task {
-                                await viewModel.cropVideo()
-                            }
-                        },
-                        viewModel: viewModel
-                    )
-                }
-            }
-            .sheet(isPresented: $showThumbnailView) {
-                VideoThumbnailView(videoId: viewModel.videoId)
+        }
+        .sheet(isPresented: $showThumbnailView) {
+            VideoThumbnailView(videoId: viewModel.videoId)
+        }
+        .sheet(isPresented: $showSubtitleEditor) {
+            if let subtitleViewModel = viewModel.subtitleViewModel,
+               let videoURL = viewModel.videoURL {
+                SubtitleEditView(
+                    viewModel: subtitleViewModel
+                )
             }
         }
     }
+}
+
+// Renamed from ToolbarContent to CustomToolbarContent
+private struct CustomToolbarContent: ToolbarContent {
+    let viewModel: VideoEditViewModel
+    let dismiss: DismissAction
+    @Binding var showError: Bool
+    @Binding var errorMessage: String?
     
-    private var videoPreviewSection: some View {
-        Section {
+    var body: some ToolbarContent {
+        Group {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Save") {
+                    Task {
+                        do {
+                            try await viewModel.saveChanges()
+                            dismiss()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                            showError = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct FormContent: View {
+    @ObservedObject var viewModel: VideoEditViewModel
+    @Binding var isPlaying: Bool
+    @Binding var isMuted: Bool
+    @Binding var showTagSelection: Bool
+    @Binding var showTrimView: Bool
+    @Binding var showCropView: Bool
+    @Binding var showThumbnailView: Bool
+    @Binding var showSubtitleEditor: Bool
+    
+    var body: some View {
+        Form {
+            VideoPreviewSection(viewModel: viewModel, isPlaying: $isPlaying, isMuted: $isMuted)
+            VideoDetailsSection(viewModel: viewModel)
+            TagsSection(viewModel: viewModel, showTagSelection: $showTagSelection)
+            PrivacySection(viewModel: viewModel)
+            EditVideoSection(
+                viewModel: viewModel,
+                showTrimView: $showTrimView,
+                showCropView: $showCropView,
+                showThumbnailView: $showThumbnailView,
+                showSubtitleEditor: $showSubtitleEditor
+            )
+        }
+    }
+}
+
+private struct VideoPreviewSection: View {
+    @ObservedObject var viewModel: VideoEditViewModel
+    @Binding var isPlaying: Bool
+    @Binding var isMuted: Bool
+    
+    var body: some View {
+        Section("Preview") {
             if let player = viewModel.player {
                 VideoPlayer(player: player)
                     .frame(height: 200)
@@ -134,9 +242,13 @@ struct VideoEditView: View {
             }
         }
     }
+}
+
+private struct VideoDetailsSection: View {
+    @ObservedObject var viewModel: VideoEditViewModel
     
-    private var videoDetailsSection: some View {
-        Section("Video Details") {
+    var body: some View {
+        Section("Details") {
             TextField("Title", text: $viewModel.title)
                 .textInputAutocapitalization(.words)
             
@@ -144,8 +256,13 @@ struct VideoEditView: View {
                 .lineLimit(3...6)
         }
     }
+}
+
+private struct TagsSection: View {
+    @ObservedObject var viewModel: VideoEditViewModel
+    @Binding var showTagSelection: Bool
     
-    private var tagsSection: some View {
+    var body: some View {
         Section("Tags") {
             if viewModel.selectedTags.isEmpty {
                 Text("No tags")
@@ -159,15 +276,27 @@ struct VideoEditView: View {
             }
         }
     }
+}
+
+private struct PrivacySection: View {
+    @ObservedObject var viewModel: VideoEditViewModel
     
-    private var privacySection: some View {
+    var body: some View {
         Section("Privacy") {
             Toggle("Private Video", isOn: $viewModel.isPrivate)
             Toggle("Allow Comments", isOn: $viewModel.allowComments)
         }
     }
+}
+
+private struct EditVideoSection: View {
+    @ObservedObject var viewModel: VideoEditViewModel
+    @Binding var showTrimView: Bool
+    @Binding var showCropView: Bool
+    @Binding var showThumbnailView: Bool
+    @Binding var showSubtitleEditor: Bool
     
-    private var editVideoSection: some View {
+    var body: some View {
         Section("Edit Video") {
             Button("Trim Video") {
                 showTrimView = true
@@ -182,29 +311,8 @@ struct VideoEditView: View {
             Button("Change Thumbnail") {
                 showThumbnailView = true
             }
-        }
-    }
-    
-    private var toolbarContent: some ToolbarContent {
-        Group {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Save") {
-                    Task {
-                        do {
-                            try await viewModel.saveChanges()
-                            dismiss()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                            showError = true
-                        }
-                    }
-                }
+            Button("Edit Subtitles") {
+                showSubtitleEditor = true
             }
         }
     }

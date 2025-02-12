@@ -75,18 +75,21 @@ struct UserProfile: Identifiable, Codable {
         var isPrivate: Bool
         var notificationsEnabled: Bool
         var allowComments: Bool
+        var showSubtitles: Bool
         
-        init(isPrivate: Bool = false, notificationsEnabled: Bool = true, allowComments: Bool = true) {
+        init(isPrivate: Bool = false, notificationsEnabled: Bool = true, allowComments: Bool = true, showSubtitles: Bool = true) {
             self.isPrivate = isPrivate
             self.notificationsEnabled = notificationsEnabled
             self.allowComments = allowComments
+            self.showSubtitles = showSubtitles
         }
         
         var asDictionary: [String: Any] {
             [
                 "isPrivate": isPrivate,
                 "notificationsEnabled": notificationsEnabled,
-                "allowComments": allowComments
+                "allowComments": allowComments,
+                "showSubtitles": showSubtitles
             ]
         }
     }
@@ -138,7 +141,8 @@ struct UserProfile: Identifiable, Codable {
             settings: UserSettings(
                 isPrivate: settings["isPrivate"] as? Bool ?? false,
                 notificationsEnabled: settings["notificationsEnabled"] as? Bool ?? true,
-                allowComments: settings["allowComments"] as? Bool ?? true
+                allowComments: settings["allowComments"] as? Bool ?? true,
+                showSubtitles: settings["showSubtitles"] as? Bool ?? true
             ),
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),

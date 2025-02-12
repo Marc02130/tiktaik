@@ -1,0 +1,110 @@
+# Data Flow Standards
+
+Rules for managing data flow and state propagation in SwiftUI.
+
+<rule>
+name: data_flow
+description: Standards for data flow and state management
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(@Observable|@State|@Binding|@Environment)"
+
+actions:
+  - type: enforce
+    patterns:
+      # Observable View Models
+      - pattern: |
+          @Observable
+          final class \w+ViewModel {
+              private let \w+Service: \w+Service
+              (private )?var error: String\?
+        message: "View models must be Observable with proper service injection"
+
+      # State Propagation
+      - pattern: |
+          struct \w+View: View {
+              let viewModel: \w+ViewModel
+              @Binding var \w+: \w+
+        message: "Use bindings for two-way state propagation"
+
+      # Error Handling
+      - pattern: |
+          @Published (private\(set\) )?var error: (String|Error)\?
+          
+          func \w+ async throws
+        message: "Implement error propagation in async operations"
+
+      # Environment Values
+      - pattern: |
+          @Environment\(\\.\w+\) private var \w+
+          @EnvironmentObject private var \w+: \w+
+        message: "Use environment for app-wide state"
+
+      # State Updates
+      - pattern: |
+          Task \{
+              await MainActor\.run \{
+                  // State updates
+              \}
+          \}
+        message: "Perform state updates on MainActor"
+
+examples:
+  - description: "View Model State"
+    input: |
+      @Observable
+      final class VideoPlayerViewModel {
+          private let videoService: VideoService
+          private(set) var error: String?
+          var isPlaying = false
+          
+          func togglePlayback() async {
+              do {
+                  try await videoService.togglePlayback()
+                  isPlaying.toggle()
+              } catch {
+                  self.error = error.localizedDescription
+              }
+          }
+      }
+    output: "Valid view model state management"
+
+  - description: "Child View State"
+    input: |
+      struct VideoControlsView: View {
+          @Binding var isPlaying: Bool
+          let onSeek: (TimeInterval) -> Void
+          
+          var body: some View {
+              Button {
+                  isPlaying.toggle()
+              } label: {
+                  Image(systemName: isPlaying ? "pause" : "play")
+              }
+          }
+      }
+    output: "Valid child view state binding"
+
+  - description: "Environment Usage"
+    input: |
+      struct MainView: View {
+          @Environment(\.dismiss) private var dismiss
+          @EnvironmentObject private var authViewModel: AuthViewModel
+          
+          var body: some View {
+              if authViewModel.isAuthenticated {
+                  // Main content
+              } else {
+                  LoginView()
+              }
+          }
+      }
+    output: "Valid environment usage"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

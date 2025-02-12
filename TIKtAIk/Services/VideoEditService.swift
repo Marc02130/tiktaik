@@ -249,7 +249,7 @@ final class VideoEditService: VideoTrimming, VideoCropping {
             print("DEBUG: Starting export to:", outputURL.path)
             
             // Monitor progress
-            let progressTask = Task {
+            _ = Task {
                 for await state in exportSession.states(updateInterval: 0.1) {
                     if case .exporting(let exportProgress) = state {
                         await MainActor.run {
@@ -336,7 +336,7 @@ final class VideoEditService: VideoTrimming, VideoCropping {
         
         // Monitor progress using async stream
         print("DEBUG: Starting progress monitoring")
-        let progressTask = Task {
+        _ = Task {
             for await state in export.states(updateInterval: 0.1) {
                 if case .exporting(let exportProgress) = state {
                     print("DEBUG: Export progress:", exportProgress.fractionCompleted)
@@ -354,7 +354,6 @@ final class VideoEditService: VideoTrimming, VideoCropping {
             print("DEBUG: Export failed:", error)
             throw error
         }
-        progressTask.cancel()
         
         // Verify export succeeded
         print("DEBUG: Verifying exported file")

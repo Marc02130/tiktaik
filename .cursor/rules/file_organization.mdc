@@ -1,0 +1,108 @@
+# File Organization Standards
+
+Rules for organizing files and directories in the project.
+
+<rule>
+name: file_organization
+description: Standards for project structure and file organization
+
+filters:
+  - type: path
+    pattern: ".*"
+  - type: file_extension
+    pattern: "\\.swift$"
+
+actions:
+  - type: enforce
+    patterns:
+      # Root Directory Structure
+      - pattern: |
+          /TIKtAIk
+          ├── docs/
+          ├── App/
+          ├── Features/
+          ├── Models/
+          ├── Services/
+          ├── Utils/
+          ├── Views/
+          ├── TIKtAIkTests/
+          └── TIKtAIkUITests/
+        message: "Follow standard directory structure"
+
+      # File Location
+      - pattern: |
+          TIKtAIk/(Models|Views|Services|ViewModels)/\w+/\w+\.(swift|md)
+        message: "Place files in appropriate directories"
+
+      # Feature Module Structure
+      - pattern: |
+          Features/\w+/
+          ├── Models/
+          ├── Views/
+          ├── ViewModels/
+          └── Services/
+        message: "Organize feature modules consistently"
+
+      # Test Organization
+      - pattern: |
+          TIKtAIkTests/
+          ├── ViewModels/
+          ├── Services/
+          └── Mocks/
+        message: "Organize tests by component type"
+
+examples:
+  - description: "View Organization"
+    input: |
+      TIKtAIk/Views/Video/
+      ├── Edit/
+      │   ├── VideoEditView.swift
+      │   └── Components/
+      │       ├── TrimView.swift
+      │       └── CropView.swift
+      ├── Player/
+      │   ├── VideoPlayerView.swift
+      │   └── Controls/
+      │       └── PlayerControlsView.swift
+      └── Upload/
+          └── VideoUploadView.swift
+    output: "Valid view organization"
+
+  - description: "Feature Module"
+    input: |
+      TIKtAIk/Features/VideoProcessing/
+      ├── Models/
+      │   ├── VideoMetadata.swift
+      │   └── ProcessingConfig.swift
+      ├── Views/
+      │   └── ProcessingView.swift
+      ├── ViewModels/
+      │   └── ProcessingViewModel.swift
+      └── Services/
+          └── VideoProcessingService.swift
+    output: "Valid feature module structure"
+
+  - description: "Test Organization"
+    input: |
+      TIKtAIkTests/
+      ├── ViewModels/
+      │   └── VideoEditViewModelTests.swift
+      ├── Services/
+      │   └── VideoProcessingServiceTests.swift
+      └── Mocks/
+          ├── MockVideoService.swift
+          └── MockStorageService.swift
+    output: "Valid test organization"
+
+metadata:
+  priority: high
+  version: 1.0
+
+# Additional Rules
+- Group related files in subdirectories
+- Use clear, descriptive directory names
+- Keep directory depth reasonable (max 3-4 levels)
+- Place shared utilities in Utils/
+- Keep documentation in docs/
+- Group tests parallel to source structure
+</rule> 

@@ -1,0 +1,118 @@
+# Reusable Components Standards
+
+Rules for creating and using reusable SwiftUI components.
+
+<rule>
+name: reusable_components
+description: Standards for component reusability and extensions
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(ViewModifier|extension View|protocol.*View)"
+
+actions:
+  - type: enforce
+    patterns:
+      # View Modifiers
+      - pattern: |
+          struct \w+Modifier: ViewModifier {
+              // Required properties
+              func body\(content: Content\) -> some View {
+                  content
+                      \.\w+\(.*\)
+              }
+          }
+          
+          extension View {
+              func \w+\(.*\) -> some View {
+                  modifier\(\w+Modifier\(.*\)\)
+              }
+          }
+        message: "Create view modifiers with extension helpers"
+
+      # Style Extensions
+      - pattern: |
+          extension View {
+              func \w+Style\(.*\) -> some View {
+                  self
+                      \.\w+\(.*\)
+                      \.\w+\(.*\)
+              }
+          }
+        message: "Create style extensions for common styling"
+
+      # Component Protocols
+      - pattern: |
+          protocol \w+View: View {
+              associatedtype Data
+              var data: Data { get }
+          }
+        message: "Define protocols for reusable view interfaces"
+
+      # Reusable Views
+      - pattern: |
+          struct \w+View<T>: View where T: \w+ {
+              let data: T
+              var body: some View
+        message: "Create generic views for reusability"
+
+examples:
+  - description: "Custom View Modifier"
+    input: |
+      struct ShadowedStyle: ViewModifier {
+          let radius: CGFloat
+          let color: Color
+          
+          func body(content: Content) -> some View {
+              content
+                  .shadow(color: color, radius: radius)
+          }
+      }
+      
+      extension View {
+          func shadowed(radius: CGFloat = 5, color: Color = .black) -> some View {
+              modifier(ShadowedStyle(radius: radius, color: color))
+          }
+      }
+    output: "Valid view modifier pattern"
+
+  - description: "Style Extension"
+    input: |
+      extension View {
+          func primaryButtonStyle() -> some View {
+              self
+                  .font(.headline)
+                  .foregroundStyle(.white)
+                  .padding()
+                  .background(.blue)
+                  .clipShape(RoundedRectangle(cornerRadius: 10))
+          }
+      }
+    output: "Valid style extension"
+
+  - description: "Reusable Component"
+    input: |
+      protocol MediaPlayerView: View {
+          associatedtype Media
+          var media: Media { get }
+          var onPlay: () -> Void { get }
+          var onPause: () -> Void { get }
+      }
+      
+      struct VideoPlayerView: MediaPlayerView {
+          let media: Video
+          let onPlay: () -> Void
+          let onPause: () -> Void
+          
+          var body: some View {
+              // Implementation
+          }
+      }
+    output: "Valid reusable component pattern"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

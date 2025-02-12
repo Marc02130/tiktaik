@@ -29,6 +29,7 @@ dist-ssr
 .env.prod
 .env.test
 .env.local
+Secrets.swift
 
 # plist files
 GoogleService-Info.plist

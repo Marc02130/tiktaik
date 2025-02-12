@@ -1,0 +1,111 @@
+# Code Style Standards
+
+Rules for consistent code formatting and style across the project.
+
+<rule>
+name: code_style
+description: Standards for Swift code style and formatting
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: ".*"
+
+actions:
+  - type: enforce
+    patterns:
+      # Debug Logging
+      - pattern: |
+          print\("DEBUG: .*"\)
+        message: "Use standard DEBUG prefix for debug prints"
+
+      # Variable Naming
+      - pattern: |
+          (var|let) [a-z][a-zA-Z0-9]* = 
+        message: "Use camelCase for variable names"
+
+      # Function Naming
+      - pattern: |
+          func [a-z][a-zA-Z0-9]*\(
+        message: "Use camelCase for function names"
+
+      # Type Naming
+      - pattern: |
+          (class|struct|enum|protocol) [A-Z][a-zA-Z0-9]* \{
+        message: "Use PascalCase for type names"
+
+      # Property Access
+      - pattern: |
+          @(State|Published|Observable) private (var|let)
+        message: "Declare property access explicitly"
+
+      # Debug Comments
+      - pattern: |
+          // DEBUG: .*
+          // FIXME: .*
+          // TODO: .*
+        message: "Use standard comment prefixes"
+
+examples:
+  - description: "Debug Logging"
+    input: |
+      print("DEBUG: Loading video from storage path:", video.storageUrl)
+      print("DEBUG: Storage bucket:", storageRef.bucket)
+      print("DEBUG: Storage full path:", storageRef.fullPath)
+    output: "Valid debug logging"
+
+  - description: "Variable Declaration"
+    input: |
+      private let videoService: VideoService
+      private var currentTime: TimeInterval = 0
+      @Published private(set) var isPlaying = false
+      @State private var selectedThumbnailIndex = 0
+    output: "Valid variable declarations"
+
+  - description: "Function Declaration"
+    input: |
+      func togglePlayback() async throws {
+          guard !isLoading else { return }
+          
+          do {
+              if isPlaying {
+                  try await videoService.pause()
+              } else {
+                  try await videoService.play()
+              }
+              isPlaying.toggle()
+          } catch {
+              print("DEBUG: Playback toggle failed:", error)
+          }
+      }
+    output: "Valid function declaration"
+
+  - description: "Debug Comments"
+    input: |
+      // DEBUG: Added to track video load timing
+      let startTime = Date()
+      
+      // FIXME: Temporary workaround for iOS 17 video loading issue
+      if #available(iOS 17, *) {
+          try await Task.sleep(for: .milliseconds(100))
+      }
+      
+      print("DEBUG: Video load time:", Date().timeIntervalSince(startTime))
+    output: "Valid debug comments"
+
+metadata:
+  priority: high
+  version: 1.0
+
+# Additional Rules
+- Use SwiftLint for automated style enforcement
+- Follow Swift API Design Guidelines
+- Keep functions focused and concise
+- Use clear, descriptive names
+- Document debug code purpose
+- Use consistent spacing and indentation
+- Group related properties and methods
+- Order properties: stored before computed
+- Keep files under 400 lines when possible
+</rule> 

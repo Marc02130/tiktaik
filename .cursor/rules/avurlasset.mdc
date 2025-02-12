@@ -1,0 +1,70 @@
+---
+description: AVURLAsset Standards
+globs: *.swift
+---
+# AVURLAsset Standards
+
+## Core Methods and Properties
+
+1. Asset Creation
+```swift
+// Basic initialization
+convenience init(url: URL)
+
+// Initialization with options
+init(url: URL, options: [String: Any]?)
+```
+
+2. Available Properties
+```swift
+// URL access
+var url: URL { get }
+
+// Resource loader
+var resourceLoader: AVAssetResourceLoader { get }
+
+// Content key processing
+var mayRequireContentKeysForMediaDataProcessing: Bool { get }
+
+// Cache
+var assetCache: AVAssetCache? { get }
+
+// HTTP session identifier
+var httpSessionIdentifier: UUID { get }
+```
+
+3. Class Methods
+```swift
+// Supported media types
+class func audiovisualTypes() -> [AVFileType]
+class func audiovisualMIMETypes() -> [String]
+class func isPlayableExtendedMIMEType(_ mimeType: String) -> Bool
+```
+
+## Implementation Requirements
+
+1. Asset Creation
+```swift
+// Basic creation
+let asset = AVURLAsset(url: url)
+
+// Creation with options
+let options: [String: Any] = [:]  // Specify needed options
+let asset = AVURLAsset(url: url, options: options)
+```
+
+2. Media Type Validation
+```swift
+// Check if file type is supported
+let supportedTypes = AVURLAsset.audiovisualTypes()
+let supportedMIMETypes = AVURLAsset.audiovisualMIMETypes()
+```
+
+metadata:
+  priority: high
+  version: 1.0
+  category: media_handling
+  tags:
+    - avfoundation
+    - video
+    - asset_management

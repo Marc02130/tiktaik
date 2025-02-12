@@ -1,0 +1,92 @@
+# Accessibility Standards
+
+Rules for implementing accessibility features in SwiftUI views.
+
+<rule>
+name: accessibility_standards
+description: Standards for accessibility implementation
+
+filters:
+  - type: file_extension
+    pattern: "\\.swift$"
+  - type: content
+    pattern: "(accessibility|\.font|\.dynamicTypeSize)"
+
+actions:
+  - type: enforce
+    patterns:
+      # Basic Accessibility
+      - pattern: |
+          \.accessibility(Label|Hint|Value)\(".*"\)
+        message: "Provide accessibility labels for UI elements"
+
+      # Dynamic Type
+      - pattern: |
+          \.font\(\..*\)
+          \.dynamicTypeSize\(\.\.large\)
+        message: "Support Dynamic Type for text scaling"
+
+      # Custom Controls
+      - pattern: |
+          \.accessibilityElement\(children: \.combine\)
+          \.accessibilityLabel\(".*"\)
+          \.accessibilityValue\(".*"\)
+          \.accessibilityHint\(".*"\)
+        message: "Implement full accessibility for custom controls"
+
+      # Semantic Button Actions
+      - pattern: |
+          Button\(action: \{
+              .*
+          \}\) \{
+              .*
+          \}
+          \.accessibilityAction\(named: ".*"\) \{
+              .*
+          \}
+        message: "Provide semantic actions for buttons"
+
+      # Image Accessibility
+      - pattern: |
+          Image\(.*\)
+              \.accessibilityLabel\(".*"\)
+              \.accessibilityHint\(".*"\)
+        message: "Provide accessibility descriptions for images"
+
+examples:
+  - description: "Basic Text Accessibility"
+    input: |
+      Text("Video Title")
+          .font(.title)
+          .dynamicTypeSize(...DynamicTypeSize.accessibility5)
+          .accessibilityLabel("Video title")
+          .accessibilityHint("Displays the title of the current video")
+    output: "Valid text accessibility"
+
+  - description: "Custom Control"
+    input: |
+      HStack {
+          Button(action: togglePlayback) {
+              Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel(isPlaying ? "Pause" : "Play")
+          .accessibilityValue(timeFormatter.string(from: currentTime))
+          .accessibilityHint("Double tap to \(isPlaying ? "pause" : "play") video")
+      }
+    output: "Valid custom control accessibility"
+
+  - description: "Image Accessibility"
+    input: |
+      Image(uiImage: thumbnail)
+          .resizable()
+          .scaledToFit()
+          .accessibilityLabel("Video thumbnail")
+          .accessibilityHint("Preview image for the video")
+          .accessibilityAddTraits(.isImage)
+    output: "Valid image accessibility"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule> 

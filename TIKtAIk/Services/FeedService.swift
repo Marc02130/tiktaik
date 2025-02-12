@@ -347,18 +347,43 @@ import SwiftUI // For pow() function
         print("DEBUG: Found \(snapshot.documents.count) documents")
         
         let videos = try snapshot.documents.compactMap { doc -> Video? in
-            do {
-                let video = try doc.data(as: Video.self)
-                print("DEBUG: Decoded video:", video.id)
-                return video
-            } catch {
-                print("DEBUG: Failed to decode video from doc:", doc.documentID, error)
-                return nil
-            }
+            try doc.data(as: Video.self)
         }
         
         print("DEBUG: Returning \(videos.count) videos")
         return videos
+    }
+    
+    private func updateVideoStats(_ video: Video) async throws {
+        let ref = db.collection(Video.collectionName).document(video.id)
+        
+        // These operations can throw
+        try await ref.updateData([
+            "viewCount": FieldValue.increment(Int64(1)),
+            "lastViewedAt": Timestamp(date: Date())
+        ])
+    }
+    
+    private func updateUserStats(_ userId: String) async throws {
+        let ref = db.collection("userStats").document(userId)
+        
+        // These operations can throw
+        try await ref.setData([
+            "lastActiveAt": Timestamp(date: Date()),
+            "totalViews": FieldValue.increment(Int64(1))
+        ], merge: true)
+    }
+    
+    // Update the calling functions to properly handle throws
+    func recordView(for video: Video) async {
+        do {
+            try await updateVideoStats(video)
+            if let userId = Auth.auth().currentUser?.uid {
+                try await updateUserStats(userId)
+            }
+        } catch {
+            print("Failed to record view:", error)
+        }
     }
 }
 
