@@ -120,13 +120,7 @@ struct FeedView: View {
             print("DEBUG: Creator status changed to: \(String(describing: isCreator))")
             viewModel.config.isCreatorOnly = isCreator ?? false
             Task {
-                print("DEBUG: Updating feed type")
-                do {
                     try await viewModel.updateFeedType()
-                    print("DEBUG: Feed type updated successfully")
-                } catch {
-                    print("DEBUG: Failed to update feed type:", error)
-                }
             }
         }
         .onChange(of: viewModel.state) { oldState, newState in

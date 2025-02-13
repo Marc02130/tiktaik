@@ -90,81 +90,46 @@ final class WhisperSubtitleService {
         do {
             // Create asset with explicit file URL
             let fileURL = URL(fileURLWithPath: videoURL.path)
-            print("DEBUG: Created file URL: \(fileURL)")
-            print("DEBUG: File URL scheme: \(fileURL.scheme ?? "none")")
 
             let asset = AVURLAsset(url: fileURL, options: [
                 AVURLAssetPreferPreciseDurationAndTimingKey: true
             ])
-            print("DEBUG: Created AVURLAsset")
-            
-            // Get audio tracks with detailed error handling
-            let audioTracks: [AVAssetTrack]
-            do {
-                audioTracks = try await asset.loadTracks(withMediaType: .audio)
-                print("DEBUG: audioTracks loaded")
-            } catch let error as NSError {
-                print("ERROR: Failed to load audio tracks")
-                print("- Error domain: \(error.domain)")
-                print("- Error code: \(error.code)")
-                print("- Description: \(error.localizedDescription)")
-                print("- Debug description: \(error.debugDescription)")
-                print("- Failure reason: \(error.localizedFailureReason ?? "none")")
-                print("- Recovery suggestion: \(error.localizedRecoverySuggestion ?? "none")")
-                print("- Underlying error: \(error.underlyingErrors)")
-                print("- User info: \(error.userInfo)")
-                throw WhisperError.audioExtractionFailed
-            }
-            
-            guard let audioTrack = audioTracks.first else {
-                print("ERROR: No audio tracks found in video")
-                throw WhisperError.audioExtractionFailed
-            }
             
             // Setup output path for audio
             let outputURL = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString)
                 .appendingPathExtension("m4a")
-            print("DEBUG: Output audio path: \(outputURL)")
             
             // Create export session
             guard let session = AVAssetExportSession(
                 asset: asset,
                 presetName: AVAssetExportPresetAppleM4A
             ) else {
-                print("ERROR: Failed to create export session")
                 throw WhisperError.audioExtractionFailed
             }
             
             // Configure and run export
             session.outputURL = outputURL
             session.outputFileType = .m4a
-            print("DEBUG: Export session configured")
 
             // Export directly
             await session.export()
 
             // Check result
             guard FileManager.default.fileExists(atPath: outputURL.path) else {
-                print("ERROR: Audio file not found at path")
                 throw WhisperError.audioExtractionFailed
             }
 
-            print("DEBUG: Audio extracted to \(outputURL)")
             progress(0.3)
             
             // Create and send request
-            print("DEBUG: Creating Whisper API request...")
             let request = try createWhisperRequest(audioURL: outputURL)
-            print("DEBUG: Sending request to Whisper API...")
             let (data, response) = try await URLSession.shared.data(for: request)
             progress(0.7)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw WhisperError.invalidResponse
             }
-            
-            print("DEBUG: Received response with status: \(httpResponse.statusCode)")
             
             if httpResponse.statusCode != 200 {
                 if let errorJson = try? JSONDecoder().decode([String: String].self, from: data),
@@ -178,12 +143,10 @@ final class WhisperSubtitleService {
                 throw WhisperError.invalidResponse
             }
             
-            print("DEBUG: Successfully received VTT response")
             progress(0.9)
             
             // 3. Parse response
             let subtitles = try parseVTT(vtt, videoId: videoId)
-            print("DEBUG: Generated \(subtitles.count) subtitles")
             
             return subtitles
             

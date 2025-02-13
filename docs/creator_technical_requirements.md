@@ -40,38 +40,75 @@ protocol DataService {
     func getMetadata(contentId: String) async throws -> VideoMetadata
     func getCreatorTypeConfig(type: CreatorType) async throws -> [String: Any]
 }
-```
 
-## Authentication
-
-### Security Service
-```swift
-protocol SecurityService {
-    func authenticate(credentials: AuthCredentials) async throws -> CreatorProfile
+protocol AnalyticsService {
+    /// Viewer Retention
+    func getRetentionMetrics(videoId: String) async throws -> RetentionMetrics
+    func getEngagementMetrics(videoId: String) async throws -> EngagementMetrics
+    func getGeographicMetrics(videoId: String) async throws -> GeographicMetrics
+    func getDeviceMetrics(videoId: String) async throws -> DeviceMetrics
 }
 
-struct SecurityConfig {
-    static let passwordMinLength = 8
+struct RetentionMetrics {
+    let averageWatchDuration: TimeInterval
+    let watchCompletionRate: Double  // Percentage who finish the video
+    let dropOffPoints: [TimeInterval: Int]  // Time points where viewers leave
+    let replaySegments: [TimeInterval: Int] // Most replayed segments
 }
-```
 
-## Performance Requirements
-- Upload: < 3 minutes for 500MB
-- Playback start: < 2 seconds
-- UI response: < 100ms
-
-## Error Handling
-```swift
-enum TechnicalError: Error {
-    case uploadFailed(String)
-    case processingFailed(String)
-    case authError(String)
-    case storageError(String)
+struct EngagementMetrics {
+    let viewCount: Int
+    let uniqueViewers: Int
+    let likes: Int
+    let shares: Int
+    let comments: Int
+    let saveCount: Int
+    let engagementRate: Double  // (likes + shares + comments) / views
 }
-```
 
-## Testing Requirements
-- Basic unit tests
-- Basic UI tests
-- Error scenario coverage
+struct GeographicMetrics {
+    let viewsByCountry: [String: Int]  // Country code: view count
+    let viewsByCity: [String: Int]     // City: view count
+    let topLocations: [String]         // Top 10 locations
+}
+
+struct DeviceMetrics {
+    let deviceTypes: [String: Int]     // iPhone, iPad, etc: count
+    let osVersions: [String: Int]      // iOS version: count
+    let appVersions: [String: Int]     // App version: count
+    let networkTypes: [String: Int]    // WiFi, Cellular: count
+}
+
+struct CommentMetrics {
+    let totalComments: Int
+    let commentSentiment: SentimentScore
+    let topComments: [Comment]        // Most liked/engaged comments
+    let commentTimestamps: [TimeInterval: Int]  // Comment frequency over video duration
+    let responseRate: Double          // Creator response rate to comments
+    let averageResponseTime: TimeInterval
+}
+
+struct SentimentScore {
+    let positive: Double  // 0-1 score
+    let negative: Double  // 0-1 score
+    let neutral: Double   // 0-1 score
+    let keywords: [String: Int]  // Common keywords and their frequency
+}
+
+struct Comment {
+    let id: String
+    let text: String
+    let timestamp: Date
+    let likes: Int
+    let replies: Int
+    let hasCreatorResponse: Bool
+    let sentiment: SentimentScore
+}
+
+extension AnalyticsService {
+    /// Comment Analysis
+    func getCommentMetrics(videoId: String) async throws -> CommentMetrics
+    func getCommentSentiment(commentId: String) async throws -> SentimentScore
+    func getTopComments(videoId: String, limit: Int) async throws -> [Comment]
+}
 ```

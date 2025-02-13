@@ -14,7 +14,7 @@ import Foundation
 import FirebaseFirestore
 
 /// Comment model for videos
-struct Comment: Identifiable, Codable {
+struct Comment: Identifiable, Codable, Equatable {
     /// Unique comment identifier
     let id: String
     /// Associated video ID
@@ -101,6 +101,18 @@ struct Comment: Identifiable, Codable {
             updatedAt: updatedTimestamp.dateValue()
         )
     }
+    
+    static func == (lhs: Comment, rhs: Comment) -> Bool {
+        lhs.id == rhs.id &&
+        lhs.userId == rhs.userId &&
+        lhs.videoId == rhs.videoId &&
+        lhs.parentId == rhs.parentId &&
+        lhs.content == rhs.content &&
+        lhs.likesCount == rhs.likesCount &&
+        lhs.replyCount == rhs.replyCount &&
+        lhs.createdAt == rhs.createdAt &&
+        lhs.updatedAt == rhs.updatedAt
+    }
 }
 
 /// Errors related to comment operations
@@ -109,6 +121,10 @@ enum CommentError: LocalizedError {
     case invalidComment
     case operationFailed
     case invalidData
+    case failedToLoad
+    case failedToAdd
+    case networkError
+    case invalidContent
     
     var errorDescription: String? {
         switch self {
@@ -120,6 +136,33 @@ enum CommentError: LocalizedError {
             return "Operation failed"
         case .invalidData:
             return "Invalid comment data"
+        case .failedToLoad:
+            return "Unable to load comments"
+        case .failedToAdd:
+            return "Failed to add comment"
+        case .networkError:
+            return "Network connection error"
+        case .invalidContent:
+            return "Invalid comment content"
+        }
+    }
+    
+    var recoverySuggestion: String? {
+        switch self {
+        case .notAuthenticated:
+            return "Please sign in to continue"
+        case .invalidComment, .invalidData:
+            return "Please try again with valid content"
+        case .operationFailed:
+            return "Please try again"
+        case .failedToLoad:
+            return "Pull down to try again"
+        case .failedToAdd:
+            return "Please try again"
+        case .networkError:
+            return "Check your internet connection"
+        case .invalidContent:
+            return "Comment cannot be empty"
         }
     }
 } 

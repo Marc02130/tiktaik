@@ -6,14 +6,17 @@
 
 ## Metadata Requirements
 ### Required Fields
-- Title
-- Description
-- Creator Type
-- Group (genre/subject/cuisine)
-
-### Optional Fields
-- Tags
-- Custom fields (based on creator type)
+```swift
+struct VideoMetadata {
+    let id: String
+    let title: String              // Required
+    let description: String        // Required
+    let creatorType: CreatorType   // Required
+    let group: String             // Required (genre/subject/cuisine/etc)
+    let tags: [String]            // Optional
+    let customFields: [String: Any] // Dynamic fields from Firestore
+}
+```
 
 ## Creator Types
 1. Chef/Food
@@ -41,108 +44,139 @@
 
 ### 1. Chef/Food Creator
 ```swift
-struct RecipeMetadata {
-    let title: String
-    let ingredients: [String]
-    let cookingTime: TimeInterval
-    let cuisineType: String
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "ingredients": [String],
+    "cookingTime": TimeInterval,
+    "cuisineType": String
+]
 ```
 
 ### 2. Fitness Creator
 ```swift
-struct WorkoutMetadata {
-    let title: String
-    let muscleGroups: [String]
-    let equipment: [String]
-    let duration: TimeInterval
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "muscleGroups": [String],
+    "equipment": [String],
+    "duration": TimeInterval
+]
 ```
 
 ### 3. Educational Creator
 ```swift
-struct LearningMetadata {
-    let title: String
-    let subject: String
-    let level: String
-    let keyPoints: [String]
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "subject": String,
+    "level": String,
+    "keyPoints": [String]
+]
 ```
 
 ### 4. Comedy Creator
 ```swift
-struct SkitMetadata {
-    let title: String
-    let genre: String
-    let contentRating: String
-    let tags: [String]
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "genre": String,
+    "contentRating": String,
+    "tags": [String]
+]
 ```
 
 ### 5. Beauty/Makeup Creator
 ```swift
-struct BeautyMetadata {
-    let title: String
-    let skillLevel: String
-    let products: [String]
-    let techniques: [String]
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "skillLevel": String,
+    "products": [String],
+    "techniques": [String]
+]
 ```
 
 ### 6. Music Creator
 ```swift
-struct MusicMetadata {
-    let title: String
-    let genre: String
-    let instruments: [String]
-    let isOriginal: Bool
-}
+// Custom fields stored in VideoMetadata.customFields
+[
+    "genre": String,
+    "instruments": [String],
+    "isOriginal": Bool
+]
 ```
 
-## Common Requirements
+### Analytics Requirements
 
-### Authentication
-```swift
-protocol CreatorAuthentication {
-    func signUp(email: String, password: String) async throws
-    func signIn(email: String, password: String) async throws
-}
-```
+#### Viewer Retention Analytics
+- Average watch duration per video
+- Video completion rate
+- Identification of drop-off points
+- Most replayed segments
+- Viewer retention graph over video duration
 
-### Profile
-```swift
-struct CreatorProfile {
-    let userId: String
-    let creatorType: CreatorType
-    var displayName: String
-}
-```
+#### Engagement Analytics
+- Total view count
+- Unique viewer count
+- Like count and like rate
+- Share count and share rate
+- Comment count
+- Save/bookmark count
+- Overall engagement rate
+- Trending metrics
 
-### Basic Analytics
-```swift
-protocol BasicAnalytics {
-    func getViewCount() async -> Int
-}
-```
+#### Geographic Analytics
+- Views by country
+- Views by city
+- Top 10 locations
+- Geographic heat map
+- Time zone distribution
 
-## Performance Requirements
+#### Device Analytics
+- Device type distribution (iPhone, iPad)
+- OS version distribution
+- App version analytics
+- Network type usage (WiFi vs Cellular)
+- Performance metrics by device
 
-### Video Processing
-- Upload time: < 3 minutes
-- Playback start: < 2 seconds
+#### Analytics Display Requirements
+- Data must be updated at least every 30 minutes
+- Interactive graphs and charts
+- Exportable reports
+- Date range selection
+- Comparison with previous periods
+- Real-time view counter for new uploads
 
-### UI Response
-- Action feedback: < 100ms
+#### Comment Analytics
+- Comment volume metrics
+  - Total comments
+  - Comments per view ratio
+  - Comment frequency over time
+  - Peak commenting periods
 
-## Error Handling
-```swift
-enum CreatorError: Error {
-    case uploadFailed(String)
-    case processingFailed(String)
-    case storageError(String)
-}
-```
+- Sentiment Analysis
+  - Overall sentiment distribution (positive/negative/neutral)
+  - Sentiment trends over time
+  - Common keywords and phrases
+  - Topic clustering
 
-## Testing Requirements
-- Basic error scenarios covered
-- Core functionality tested
+- Engagement Quality
+  - Most engaging comments
+  - Comment-to-reply ratios
+  - Creator response rate
+  - Average response time
+  - User engagement patterns
+
+- Comment Performance
+  - Most liked comments
+  - Most replied-to comments
+  - Comment timing vs. video timeline
+  - Comment retention correlation
+
+- Actionable Insights
+  - Content improvement suggestions based on comments
+  - Optimal times to respond to comments
+  - Controversial content identification
+  - Community feedback summaries
+
+- Display Features
+  - Sentiment timeline visualization
+  - Word clouds for common terms
+  - Comment heat maps on video timeline
+  - Interactive comment analytics dashboard

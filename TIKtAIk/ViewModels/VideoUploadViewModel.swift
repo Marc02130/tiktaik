@@ -269,8 +269,6 @@ final class VideoUploadViewModel: ObservableObject {
                 }
             }
             
-            let videoDownloadURL = try await videoRef.downloadURL()
-            
             // 2. Upload thumbnail if selected
             var thumbnailURL: String?
             if let thumbnails = thumbnails, !thumbnails.isEmpty {

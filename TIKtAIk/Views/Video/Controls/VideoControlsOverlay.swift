@@ -53,7 +53,10 @@ struct VideoControlsOverlay: View {
                     InteractionButton(
                         icon: "message.fill",
                         count: stats.commentsCount,
-                        action: onComment
+                        action: {
+                            print("DEBUG: Comment button tapped")
+                            onComment()
+                        }
                     )
                     
                     InteractionButton(

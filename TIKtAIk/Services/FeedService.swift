@@ -81,7 +81,7 @@ import SwiftUI // For pow() function
         let snapshot = try await queryRef.getDocuments()
         print("DEBUG: Found \(snapshot.documents.count) documents")
         
-        let videos = try snapshot.documents.compactMap { doc -> Video? in
+        let videos = snapshot.documents.compactMap { doc -> Video? in
             do {
                 let video = try Video.from(doc)
                 print("DEBUG: Decoded video:", video.id)

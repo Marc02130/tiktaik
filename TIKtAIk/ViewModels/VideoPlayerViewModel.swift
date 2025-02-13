@@ -200,13 +200,10 @@ class VideoPlayerViewModel: ObservableObject {
     private func loadAndPlay() {
         Task {
             playbackStatus = .loading
-            do {
-                await loadVideo()  // Remove try since loadVideo handles errors internally
-                player?.play()
-                playbackStatus = .playing
-            } catch {
-                playbackStatus = .failed(error)
-            }
+            
+            await loadVideo()  // Remove try since loadVideo handles errors internally
+            player?.play()
+            playbackStatus = .playing
         }
     }
     
@@ -235,10 +232,12 @@ class VideoPlayerViewModel: ObservableObject {
         print("DEBUG: Setting up time observer")
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         timeObserverToken = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-            self?.currentTime = time.seconds
+            Task { @MainActor in  // Add MainActor wrapper for thread safety
+                self?.currentTime = time.seconds
+            }
         }
         
-        // Add notification observer for video completion
+        // Keep existing video completion observer
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(playerDidFinishPlaying),
@@ -267,26 +266,31 @@ class VideoPlayerViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         
-        do {
-            print("DEBUG: Creating AVAsset for \(video.id)")
-            let asset = AVAsset(url: url)
-            
-            print("DEBUG: Creating AVPlayerItem for \(video.id)")
-            let playerItem = AVPlayerItem(asset: asset)
-            
-            print("DEBUG: Creating AVPlayer for \(video.id)")
-            player = AVPlayer(playerItem: playerItem)
-            player?.automaticallyWaitsToMinimizeStalling = false
-            
-            print("DEBUG: Setting up time observer for \(video.id)")
-            setupTimeObserver()
-            
-            print("DEBUG: Video ready for playback: \(video.id)")
-            playbackStatus = .ready
-        } catch {
-            print("ERROR: Failed to load video \(video.id): \(error)")
-            playbackStatus = .failed(error)
-        }
+        print("DEBUG: Creating AVAsset for \(video.id)")
+        let asset = AVURLAsset(url: url)
+        
+        print("DEBUG: Creating AVPlayerItem for \(video.id)")
+        let playerItem = AVPlayerItem(asset: asset)
+        
+        print("DEBUG: Creating AVPlayer for \(video.id)")
+        player = AVPlayer(playerItem: playerItem)
+        player?.automaticallyWaitsToMinimizeStalling = false
+        
+        print("DEBUG: Setting up time observer for \(video.id)")
+        setupTimeObserver()
+        
+        print("DEBUG: Video ready for playback: \(video.id)")
+        playbackStatus = .ready
+    }
+    
+    func handleSheetPresented() {
+        print("DEBUG: Sheet presented, pausing video")
+        pausePlayback()
+    }
+    
+    func handleSheetDismissed() {
+        print("DEBUG: Sheet dismissed, resuming video if visible")
+        startPlayback()  // If we're visible, FeedView would have already told us
     }
 }
 

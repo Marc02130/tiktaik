@@ -11,7 +11,6 @@
 
 import SwiftUI
 import AVKit
-import TIKtAIk
 
 /// View that displays subtitles over a video player
 struct SubtitleOverlayView: View {

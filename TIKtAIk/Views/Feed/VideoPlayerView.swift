@@ -31,6 +31,7 @@ struct VideoPlayerView: View {
     @StateObject private var statsViewModel: VideoStatsViewModel
     @StateObject private var subtitleViewModel: VideoSubtitleViewModel
     @AppStorage("showSubtitles") private var showSubtitles = true
+    @State private var showComments = false
     
     init(video: Video, isVisible: Bool, onPlaybackStatusChanged: @escaping (PlaybackStatus) -> Void) {
         print("DEBUG: Initializing VideoPlayerView for video \(video.id)")
@@ -79,11 +80,22 @@ struct VideoPlayerView: View {
                         video: video,
                         stats: statsViewModel.stats,
                         onLike: statsViewModel.toggleLike,
-                        onComment: statsViewModel.showComments,
+                        onComment: { showComments = true },
                         onShare: statsViewModel.shareVideo
                     )
                 }
             }
+        }
+        .sheet(isPresented: $showComments) {
+            CommentSheet(video: video)
+                .onAppear { 
+                    print("DEBUG: Comment sheet appearing")
+                    viewModel.handleSheetPresented() 
+                }
+                .onDisappear { 
+                    print("DEBUG: Comment sheet disappearing")
+                    viewModel.handleSheetDismissed() 
+                }
         }
         .onAppear {
             // Listen for start video notification
