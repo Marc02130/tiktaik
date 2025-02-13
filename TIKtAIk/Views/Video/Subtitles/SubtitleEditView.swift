@@ -16,51 +16,91 @@ struct SubtitleEditView: View {
     @ObservedObject var viewModel: VideoSubtitleViewModel
     @State private var selectedSubtitle: VideoSubtitle?
     @State private var showGenerationOptions = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        List {
-            if viewModel.isGenerating {
-                Section {
-                    HStack {
-                        ProgressView()
-                        Text("Generating subtitles...")
-                            .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            // Custom toolbar
+            HStack {
+                Button("Done") {
+                    dismiss()
+                }
+                .padding()
+                
+                Spacer()
+                
+                Text("Subtitles")
+                    .font(.headline)
+                
+                Spacer()
+                
+                if !viewModel.subtitles.isEmpty {
+                    Button("Save") {
+                        Task {
+                            do {
+                                try await viewModel.saveChanges()
+                                dismiss()
+                            } catch {
+                                print("Failed to save subtitles:", error)
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .background(Color(.systemBackground))
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(.gray.opacity(0.3)),
+                alignment: .bottom
+            )
+            
+            // Main content
+            List {
+                if viewModel.isGenerating {
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text("Generating subtitles...")
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
-            
-            Section {
-                Button("Generate Subtitles") {
-                    showGenerationOptions = true
+                
+                Section {
+                    Button("Generate Subtitles") {
+                        print("DEBUG: Generate subtitles tapped")
+                        showGenerationOptions = true
+                    }
+                    .disabled(viewModel.isGenerating)
                 }
-                .disabled(viewModel.isGenerating)
-            }
-            
-            if !viewModel.subtitles.isEmpty {
-                Section("Subtitles") {
-                    ForEach(viewModel.subtitles) { subtitle in
-                        SubtitleRow(
-                            subtitle: subtitle,
-                            isSelected: selectedSubtitle?.id == subtitle.id,
-                            onSelect: {
-                                selectedSubtitle = subtitle
-                            }
-                        )
+                
+                if !viewModel.subtitles.isEmpty {
+                    Section("Subtitles") {
+                        ForEach(viewModel.subtitles) { subtitle in
+                            SubtitleRow(
+                                subtitle: subtitle,
+                                isSelected: selectedSubtitle?.id == subtitle.id,
+                                onSelect: {
+                                    selectedSubtitle = subtitle
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
         .sheet(isPresented: $showGenerationOptions) {
             GenerationOptionsView(
-                videoURL: URL(string: "placeholder")!, // Replace with actual URL
+                videoURL: viewModel.currentVideoURL,
                 onGenerate: { preferences in
                     Task {
                         do {
                             try await viewModel.generateSubtitles(with: preferences)
+                            showGenerationOptions = false
                         } catch {
-                            // Handle the error appropriately
                             print("Failed to generate subtitles:", error)
-                            // You might want to show an alert or error message to the user
                         }
                     }
                 }

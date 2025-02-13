@@ -135,11 +135,18 @@ private struct MainContent: View {
             VideoThumbnailView(videoId: viewModel.videoId)
         }
         .sheet(isPresented: $showSubtitleEditor) {
-            if let subtitleViewModel = viewModel.subtitleViewModel,
-               let videoURL = viewModel.videoURL {
+            if let videoURLString = viewModel.videoURL {
+                let videoURL = URL(fileURLWithPath: videoURLString)
+                let subtitleViewModel = viewModel.getSubtitleViewModel() ?? VideoSubtitleViewModel(
+                    videoId: viewModel.videoId,
+                    videoURL: videoURL
+                )
                 SubtitleEditView(
                     viewModel: subtitleViewModel
                 )
+                .navigationTitle("Subtitles")
+            } else {
+                Text("Video not available")
             }
         }
     }

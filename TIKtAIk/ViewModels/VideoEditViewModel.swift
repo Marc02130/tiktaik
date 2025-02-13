@@ -97,15 +97,6 @@ final class VideoEditViewModel: ObservableObject {
         self._cropRect = Published(initialValue: CGRect(x: 0, y: 0, width: 1, height: CropConfig.aspectRatio))
         self.videoEditService = VideoEditService()
         self.video = video
-        
-        // Initialize subtitle view model
-        if let videoURL = videoURL,
-           let url = URL(string: videoURL) {
-            self.subtitleViewModel = VideoSubtitleViewModel.getViewModel(
-                for: videoId,
-                videoURL: url
-            )
-        }
     }
     
     /// Loads video data from Firestore
@@ -549,14 +540,16 @@ final class VideoEditViewModel: ObservableObject {
         try await batch.commit()
     }
     
-    private func setupSubtitleViewModel() {
-        if let videoURL = videoURL,
-           let url = URL(string: videoURL) {
-            subtitleViewModel = VideoSubtitleViewModel.getViewModel(
-                for: videoId,
-                videoURL: url
+    // Add method to create subtitle view model on demand
+    func getSubtitleViewModel() -> VideoSubtitleViewModel? {
+        if subtitleViewModel == nil, let videoURL = self.videoURL {
+            print("DEBUG: Creating subtitle view model with URL: \(videoURL)")
+            subtitleViewModel = VideoSubtitleViewModel(
+                videoId: videoId,
+                videoURL: URL(fileURLWithPath: videoURL)
             )
         }
+        return subtitleViewModel
     }
 }
 

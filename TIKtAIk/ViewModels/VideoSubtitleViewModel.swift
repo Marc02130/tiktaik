@@ -26,6 +26,11 @@ class VideoSubtitleViewModel: ObservableObject {
     private var videoURL: URL
     private static var cache: [String: VideoSubtitleViewModel] = [:]
     private let db = Firestore.firestore()
+    private let collectionName = "subtitles"
+    
+    var currentVideoURL: URL {
+        videoURL
+    }
     
     init(videoId: String, videoURL: URL) {
         self.videoId = videoId
@@ -47,7 +52,7 @@ class VideoSubtitleViewModel: ObservableObject {
     func loadSubtitles() async {
         print("DEBUG: [SUBTITLES] Loading subtitles for video \(videoId)")
         do {
-            let snapshot = try await db.collection(VideoSubtitle.collectionName)
+            let snapshot = try await db.collection(collectionName)
                 .whereField("videoId", isEqualTo: videoId)
                 .getDocuments()
             
@@ -75,15 +80,34 @@ class VideoSubtitleViewModel: ObservableObject {
         
         do {
             let service = SubtitleGenerationService()
-            try await service.generateSubtitles(
+            let generatedSubtitles = try await service.generateSubtitles(
                 for: videoURL,
                 videoId: videoId
-            ) { [weak self] progress in
-                self?.progress = progress
+            ) { [weak self] newProgress in
+                Task { @MainActor in
+                    self?.progress = newProgress
+                }
             }
+            
+            // Save to Firestore first
+            let batch = db.batch()
+            
+            for subtitle in generatedSubtitles {
+                let ref = db.collection(collectionName).document(subtitle.id)
+                batch.setData(subtitle.asDictionary, forDocument: ref)
+            }
+            
+            try await batch.commit()
+            print("DEBUG: Saved \(generatedSubtitles.count) subtitles to Firestore")
+            
+            // Then update local state
+            self.subtitles = generatedSubtitles
             self.preferences = preferences
-            await loadSubtitles()
+            
+            print("DEBUG: Updated local state with generated subtitles")
+            
         } catch {
+            print("ERROR: Failed to generate/save subtitles:", error)
             self.error = error
             throw error
         }
@@ -102,7 +126,7 @@ class VideoSubtitleViewModel: ObservableObject {
         ]
         
         do {
-            try await db.collection("videoSubtitles")
+            try await db.collection(collectionName)
                 .document(subtitle.id)
                 .updateData(data)
             
@@ -118,20 +142,23 @@ class VideoSubtitleViewModel: ObservableObject {
         // Save to user defaults or backend if needed
     }
     
-    func updateSubtitles(_ subtitles: [VideoSubtitle]) async throws {
+    @MainActor
+    func updateSubtitles(_ newSubtitles: [VideoSubtitle]) async throws {
         let batch = db.batch()
         
-        for subtitle in subtitles {
-            let ref = db.collection("videoSubtitles").document(subtitle.id)
+        for subtitle in newSubtitles {
+            let ref = db.collection(collectionName).document(subtitle.id)
             batch.setData(subtitle.asDictionary, forDocument: ref)
         }
         
         try await batch.commit()
-        await loadSubtitles() // Reload to get updated data
+        
+        // Update local state after successful save
+        self.subtitles = newSubtitles
     }
     
     func deleteSubtitle(for id: String) async throws {
-        let ref = db.collection("videoSubtitles").document(id)
+        let ref = db.collection(collectionName).document(id)
         try await ref.delete()
         await loadSubtitles() // Reload to get updated data
     }
@@ -149,6 +176,22 @@ class VideoSubtitleViewModel: ObservableObject {
         Task {
             await loadSubtitles()
         }
+    }
+    
+    func saveChanges() async throws {
+        print("DEBUG: Saving \(subtitles.count) subtitles")
+        let batch = db.batch()
+        
+        for subtitle in subtitles {
+            let ref = db.collection(collectionName).document(subtitle.id)
+            batch.setData(subtitle.asDictionary, forDocument: ref)
+        }
+        
+        try await batch.commit()
+        print("DEBUG: Successfully saved subtitles to Firestore")
+        
+        // Reload to ensure we have latest data
+        await loadSubtitles()
     }
 }
 
