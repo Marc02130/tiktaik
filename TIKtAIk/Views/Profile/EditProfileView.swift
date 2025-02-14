@@ -64,6 +64,18 @@ struct EditProfileView: View {
                             }
                         }
                 }
+                
+                if viewModel.isCreator {
+                    Section("Creator Settings") {
+                        Picker("Creator Type", selection: $viewModel.creatorType) {
+                            Text("Select Type").tag(nil as UserProfile.CreatorType?)
+                            ForEach(UserProfile.CreatorType.allCases, id: \.self) { type in
+                                Text(type.rawValue)
+                                    .tag(type as UserProfile.CreatorType?)
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
@@ -98,6 +110,7 @@ final class EditProfileViewModel: ObservableObject {
     @Published private(set) var isSaving = false
     @Published var isCreator: Bool
     @Published var showSubtitles: Bool
+    @Published var creatorType: UserProfile.CreatorType?
     
     private let profile: UserProfile
     
@@ -111,6 +124,7 @@ final class EditProfileViewModel: ObservableObject {
         self.allowComments = profile.settings.allowComments
         self.isCreator = profile.isCreator
         self.showSubtitles = profile.settings.showSubtitles
+        self.creatorType = profile.creatorType
     }
     
     @MainActor
@@ -135,7 +149,8 @@ final class EditProfileViewModel: ObservableObject {
             createdAt: profile.createdAt,
             updatedAt: Date(),
             interests: profile.interests,
-            isCreator: isCreator
+            isCreator: isCreator,
+            creatorType: isCreator ? creatorType : nil
         )
         
         do {
@@ -178,7 +193,8 @@ final class EditProfileViewModel: ObservableObject {
             createdAt: Date(),
             updatedAt: Date(),
             interests: ["coding", "swiftui", "ios"],  // Add sample interests
-            isCreator: false  // Add isCreator parameter
+            isCreator: false,  // Add isCreator parameter
+            creatorType: nil  // Add creatorType parameter
         ))
         .environmentObject(AuthViewModel())
     }

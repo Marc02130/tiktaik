@@ -13,20 +13,9 @@ struct VideoMetadata {
     let description: String        // Required
     let creatorType: CreatorType   // Required
     let group: String              // Required (genre/subject/cuisine/etc)
-    let tags: [String]             // Optional
     let customFields: [String: Any] // Dynamic fields from Firestore
 }
 
-protocol VideoUploadService {
-    /// Uploads video with metadata
-    func uploadVideo(url: URL, metadata: VideoMetadata) async throws -> URL
-}
-
-struct VideoProcessingConfig {
-    static let maxSize = 500 * 1024 * 1024  // 500MB
-    static let supportedFormats = ["mp4", "mov"]
-}
-```
 
 ## Data Management
 ```swift

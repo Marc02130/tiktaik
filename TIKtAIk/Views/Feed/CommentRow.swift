@@ -11,10 +11,20 @@
 //
 
 import SwiftUI
+import FirebaseAuth
+
+extension View {
+    func debugLog(_ message: String) -> some View {
+        print(message)
+        return self
+    }
+}
 
 struct CommentRow: View {
     let comment: Comment
-    let onReply: () -> Void  // Add callback for reply action
+    let onReply: () -> Void
+    let onDelete: () -> Void
+    let onToggle: (() -> Void)?  // Optional toggle handler
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -37,6 +47,9 @@ struct CommentRow: View {
                 if comment.parentId == nil {
                     Label("\(comment.replyCount)", systemImage: "bubble.right")
                         .font(.caption)
+                        .onTapGesture {
+                            onToggle?()  // Only toggle when tapping reply count
+                        }
                     
                     Text("•")
                     
@@ -58,21 +71,37 @@ struct CommentRow: View {
             .foregroundStyle(.secondary)
         }
         .padding(.horizontal)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if comment.userId == Auth.auth().currentUser?.uid {
+                Button(role: .destructive) {
+                    print("DEBUG: Delete button tapped for comment \(comment.id)")
+                    onDelete()
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        .onAppear {
+            print("DEBUG: CommentRow appeared for comment \(comment.id)")
+        }
     }
 }
 
 #Preview {
-    CommentRow(comment: Comment(
-        id: "1",
-        userId: "user1",
-        videoId: "video1",
-        parentId: nil,
-        content: "This is a test comment",
-        likesCount: 42,
-        replyCount: 5,
-        createdAt: Date(),
-        updatedAt: Date()
-    )) {
-        // Implementation of onReply
-    }
+    CommentRow(
+        comment: Comment(
+            id: "1",
+            userId: "user1",
+            videoId: "video1",
+            parentId: nil,
+            content: "This is a test comment",
+            likesCount: 42,
+            replyCount: 5,
+            createdAt: Date(),
+            updatedAt: Date()
+        ),
+        onReply: {},
+        onDelete: {},
+        onToggle: nil
+    )
 } 

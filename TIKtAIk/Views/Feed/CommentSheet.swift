@@ -32,7 +32,7 @@ struct CommentSheet: View {
                             .font(.caption)
                     }
                 } else {
-                    ScrollView {
+                    List {
                         if let error = viewModel.error {
                             ErrorView(error: error) {
                                 Task {
@@ -40,23 +40,28 @@ struct CommentSheet: View {
                                 }
                             }
                         } else {
-                            CommentList(
-                                threads: viewModel.commentThreads,
-                                hasMore: viewModel.hasMoreComments,
-                                isLoading: viewModel.isLoading,
-                                onLoadMore: {
-                                    await viewModel.loadMoreComments()
-                                },
-                                onReply: { comment in
-                                    replyingTo = comment
-                                    isInputFocused = true
-                                },
-                                onToggleThread: { threadId in
-                                    viewModel.toggleThread(threadId)
-                                }
-                            )
+                            ForEach(viewModel.commentThreads) { thread in
+                                CommentThreadView(
+                                    thread: thread,
+                                    onReply: { comment in
+                                        replyingTo = comment
+                                        isInputFocused = true
+                                    },
+                                    onToggle: { 
+                                        viewModel.toggleThread(thread.id)
+                                    },
+                                    onDelete: { _ in
+                                        Task {
+                                            await viewModel.deleteComment(thread.comment)
+                                        }
+                                    }
+                                )
+                                .listRowInsets(EdgeInsets())
+                                .listRowSeparator(.hidden)
+                            }
                         }
                     }
+                    .listStyle(.plain)
                     .refreshable {
                         await viewModel.loadComments(for: video.id)
                     }

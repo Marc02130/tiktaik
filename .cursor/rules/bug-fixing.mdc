@@ -4,55 +4,68 @@ globs: *.swift
 ---
 # Bug Fixing Standards
 
-1. Context Requirements
+1. Core Principles
+   - NEVER delete functionality when fixing a bug
+   - Fix bugs by correcting implementation, not removing features
+   - Document all changes with clear explanations
+   - Test fixes thoroughly before committing
+
+2. Context Requirements
    MUST check before requesting files:
    - Review error messages and stack traces
    - Check provided code snippets
    - Review related cursor rules
    - Look for file paths in logs
    
-2. File Request Protocol
+3. File Request Protocol
    When requesting files:
    - Explain why the file is needed
    - Reference the specific error/issue
    - List what was checked first
    - Quote relevant error messages
 
-3. Code Deletion Criteria
-   MUST meet ONE of these conditions:
+4. Code Deletion Criteria
+   MUST meet ALL of these conditions:
    - Code is directly causing the bug
-   - Functionality has been replaced
    - Code is redundant due to the bug fix
+   - Deletion does NOT remove functionality
+   - Alternative implementation exists
    
-4. Required Documentation
-   All deletions MUST include:
-   - Comment explaining why code is no longer needed
-   - Reference to new implementation (if moved)
-   - Bug ticket/issue number
-   
-5. Error Handling
-   Only remove error handling if:
+5. Required Documentation
+   All changes MUST include:
+   - Comment explaining the bug fix
+   - Reference to bug ticket/issue number
+   - Description of testing performed
+   - Explanation if any code was moved
+
+6. Error Handling
+   Only modify error handling if:
    - Error case is no longer possible
    - Error is now handled at a different layer
    - Error handling was incorrect
+   - New implementation provides better error coverage
 
-6. Examples:
+7. Examples:
 ```swift
-// Bad: Requesting file without context
-// "Can I see the VideoService file?"
-
-// Good: Contextual file request
-// "Based on the AVAssetExportSession error in line 234 of VideoEditService.swift,
-// and the stack trace showing a call to VideoService.validateAsset(),
-// could you share the VideoService.swift file?"
-
-// Good: Code modification with explanation
+// Bad: Removing functionality to fix bug
 func processVideo() {
-    // Removed: Old error check - Issue #123
-    // Error now handled in VideoService.validateAsset()
+    // BAD: Removing validation entirely
     // if !isValidVideo { throw VideoError.invalid }
-    
-    // Implementation continues...
+    processVideoContent()
+}
+
+// Good: Fixing bug while maintaining functionality
+func processVideo() {
+    // Fixed: Issue #123 - Improved validation logic
+    // Old: if !isValidVideo { throw VideoError.invalid }
+    // New: More specific validation
+    if !videoService.validateFormat(video) {
+        throw VideoError.invalidFormat
+    }
+    if !videoService.validateContent(video) {
+        throw VideoError.invalidContent
+    }
+    processVideoContent()
 }
 ```
 
@@ -76,6 +89,9 @@ actions:
         
       - pattern: "(?i)file\\s+request\\s+without\\s+context"
         message: "File requests must include context and prior research"
+        
+      - pattern: "(?i)remove\\s+functionality"
+        message: "Bug fixes must not remove functionality"
 
 metadata:
   priority: high

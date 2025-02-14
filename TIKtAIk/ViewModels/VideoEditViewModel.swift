@@ -88,6 +88,8 @@ final class VideoEditViewModel: ObservableObject {
     // Add save state
     @Published private(set) var isSavingSubtitles = false
     
+    @Published var metadata: VideoMetadata
+    
     /// Initializes view model with video ID
     /// - Parameter videoId: Unique identifier of video to edit
     init(videoId: String, refreshTrigger: RefreshTrigger, video: Video) {
@@ -97,6 +99,18 @@ final class VideoEditViewModel: ObservableObject {
         self._cropRect = Published(initialValue: CGRect(x: 0, y: 0, width: 1, height: CropConfig.aspectRatio))
         self.videoEditService = VideoEditService()
         self.video = video
+        
+        // Initialize metadata with defaults
+        self.metadata = VideoMetadata(
+            id: videoId,
+            title: video.title,
+            description: video.description ?? "",
+            creatorType: .food,  // Default
+            group: "",
+            customFieldsJSON: "{}",
+            createdAt: video.createdAt,
+            updatedAt: video.updatedAt
+        )
     }
     
     /// Loads video data from Firestore
@@ -114,12 +128,32 @@ final class VideoEditViewModel: ObservableObject {
             }
             
             // 1. Set basic data first
-            await MainActor.run {
-                self.title = video.title
-                self.description = video.description ?? ""
-                self.isPrivate = video.isPrivate
-                self.allowComments = video.allowComments
-                self.selectedTags = Set(video.tags)
+            self.title = video.title
+            self.description = video.description ?? ""
+            self.isPrivate = video.isPrivate
+            self.allowComments = video.allowComments
+            self.selectedTags = Set(video.tags)
+            
+            // Load creator metadata if exists
+            if let metadataData = try? await Firestore.firestore()
+                .collection("videos")
+                .document(videoId)
+                .collection("metadata")
+                .document("creator")
+                .getDocument() {
+                
+                if let data = metadataData.data() {
+                    self.metadata = VideoMetadata(
+                        id: self.videoId,
+                        title: self.title,
+                        description: self.description,
+                        creatorType: VideoMetadata.CreatorType(rawValue: data["creatorType"] as? String ?? "") ?? .food,
+                        group: data["group"] as? String ?? "",
+                        customFieldsJSON: data["customFields"] as? String ?? "{}",
+                        createdAt: self.video.createdAt,
+                        updatedAt: self.video.updatedAt
+                    )
+                }
             }
             
             print("DEBUG: Loading video from storage path:", video.storageUrl)
@@ -149,11 +183,11 @@ final class VideoEditViewModel: ObservableObject {
             let downloadTask = storageRef.write(toFile: localURL)
             
             // Create continuation to properly wait for download
-            try await withCheckedThrowingContinuation { continuation in
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 // Wait for actual completion
                 downloadTask.observe(.success) { _ in
                     print("DEBUG: Download actually completed")
-                    continuation.resume()
+                    continuation.resume(returning: ())
                 }
                 
                 // Check for errors
@@ -243,19 +277,15 @@ final class VideoEditViewModel: ObservableObject {
                 newThumbnails.append(thumbnail)
             }
             
-            await MainActor.run {
-                self.videoURL = localURL.path
-                self.duration = durationSeconds
-                self.timeRange = 0...durationSeconds
-                self.player = player
-                self.thumbnails = newThumbnails
-            }
+            self.videoURL = localURL.path
+            self.duration = durationSeconds
+            self.timeRange = 0...durationSeconds
+            self.player = player
+            self.thumbnails = newThumbnails
             
         } catch {
             print("DEBUG: Load error:", error)
-            await MainActor.run {
-                self.error = error.localizedDescription
-            }
+            self.error = error.localizedDescription
         }
         
         isLoading = false
@@ -310,6 +340,13 @@ final class VideoEditViewModel: ObservableObject {
                 "updatedAt": Timestamp(date: Date())
             ]
             
+            // Save creator metadata
+            let creatorMetadata: [String: Any] = [
+                "creatorType": metadata.creatorType.rawValue,
+                "group": metadata.group,
+                "customFields": metadata.customFieldsJSON
+            ]
+            
             // If video was edited (trimmed/cropped), handle video changes
             if videoWasEdited, let editedVideoURL = editedVideoURL {
                 // 1. Upload edited video
@@ -335,6 +372,14 @@ final class VideoEditViewModel: ObservableObject {
                 .collection(Video.collectionName)
                 .document(videoId)
                 .updateData(updateData)
+            
+            // Update creator metadata subcollection
+            try await Firestore.firestore()
+                .collection(Video.collectionName)
+                .document(videoId)
+                .collection("metadata")
+                .document("creator")
+                .setData(creatorMetadata, merge: true)
             
             // Trigger refresh after successful save
             refreshTrigger.triggerRefresh()

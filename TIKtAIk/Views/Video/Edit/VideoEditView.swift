@@ -35,6 +35,7 @@ struct VideoEditView: View {
     @State private var errorMessage: String?
     @State private var showSubtitleEditor = false
     @State private var subtitles: [VideoSubtitle] = []
+    @State private var showMetadataForm = false
     
     var body: some View {
         NavigationView {
@@ -50,7 +51,8 @@ struct VideoEditView: View {
                 showError: $showError,
                 errorMessage: $errorMessage,
                 subtitles: $subtitles,
-                dismiss: dismiss
+                dismiss: dismiss,
+                showMetadataForm: $showMetadataForm
             )
         }
     }
@@ -70,6 +72,7 @@ private struct MainContent: View {
     @Binding var errorMessage: String?
     @Binding var subtitles: [VideoSubtitle]
     let dismiss: DismissAction
+    @Binding var showMetadataForm: Bool
     
     var body: some View {
         Group {
@@ -84,7 +87,8 @@ private struct MainContent: View {
                     showTrimView: $showTrimView,
                     showCropView: $showCropView,
                     showThumbnailView: $showThumbnailView,
-                    showSubtitleEditor: $showSubtitleEditor
+                    showSubtitleEditor: $showSubtitleEditor,
+                    showMetadataForm: $showMetadataForm
                 )
             }
         }
@@ -108,8 +112,11 @@ private struct MainContent: View {
         .sheet(isPresented: $showTagSelection) {
             TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
         }
+        .sheet(isPresented: $showMetadataForm) {
+            VideoMetadataForm(metadata: $viewModel.metadata)
+        }
         .sheet(isPresented: $showTrimView) {
-            if let videoURL = viewModel.videoURL {
+            if let url = viewModel.videoURL {
                 VideoTrimView(
                     timeRange: $viewModel.timeRange,
                     duration: viewModel.duration,
@@ -121,8 +128,7 @@ private struct MainContent: View {
             }
         }
         .sheet(isPresented: $showCropView) {
-            if let videoURL = viewModel.videoURL,
-               let thumbnail = viewModel.thumbnails?.first {
+            if let thumbnail = viewModel.thumbnails?.first {
                 VideoCropView(
                     cropRect: $viewModel.cropRect,
                     thumbnail: thumbnail,
@@ -193,13 +199,32 @@ private struct FormContent: View {
     @Binding var showCropView: Bool
     @Binding var showThumbnailView: Bool
     @Binding var showSubtitleEditor: Bool
+    @Binding var showMetadataForm: Bool
     
     var body: some View {
         Form {
             VideoPreviewSection(viewModel: viewModel, isPlaying: $isPlaying, isMuted: $isMuted)
             VideoDetailsSection(viewModel: viewModel)
-            TagsSection(viewModel: viewModel, showTagSelection: $showTagSelection)
             PrivacySection(viewModel: viewModel)
+            TagsSection(viewModel: viewModel, showTagSelection: $showTagSelection)
+            Section("Additional Details") {
+                Button {
+                    showMetadataForm = true
+                } label: {
+                    HStack {
+                        Text("Metadata")
+                        Spacer()
+                        Text(viewModel.metadata.customFields.isEmpty ? "Add details" : "\(viewModel.metadata.customFields.count) fields")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .onChange(of: viewModel.metadata) { _, newValue in
+                // Handle metadata changes synchronously
+                Task {
+                    try? await viewModel.saveChanges()
+                }
+            }
             EditVideoSection(
                 viewModel: viewModel,
                 showTrimView: $showTrimView,

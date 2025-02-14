@@ -166,6 +166,30 @@ final class CommentViewModel: ObservableObject {
         }
     }
     
+    func deleteComment(_ comment: Comment) async {
+        do {
+            try await service.deleteComment(comment)
+            
+            // Remove from UI
+            if let parentId = comment.parentId {
+                // Remove reply from thread
+                if let threadIndex = commentThreads.firstIndex(where: { $0.id == parentId }) {
+                    var updatedThread = commentThreads[threadIndex]
+                    updatedThread.replies.removeAll { $0.id == comment.id }
+                    commentThreads[threadIndex] = updatedThread
+                }
+            } else {
+                // Remove entire thread
+                commentThreads.removeAll { $0.id == comment.id }
+            }
+            
+            totalCommentCount -= 1
+        } catch {
+            self.error = handleError(error)
+            showError = true
+        }
+    }
+    
     private func handleError(_ error: Error) -> String {
         if let commentError = error as? CommentError {
             return commentError.localizedDescription

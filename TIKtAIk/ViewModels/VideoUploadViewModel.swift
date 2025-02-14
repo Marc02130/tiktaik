@@ -47,7 +47,7 @@ final class VideoUploadViewModel: ObservableObject {
     /// Current upload status message
     @Published private(set) var uploadStatus = ""
     /// Current error message if any
-    @Published private(set) var error: String?
+    @Published var error: String?
     /// Whether the view should be dismissed
     @Published private(set) var shouldDismiss = false
     
@@ -69,6 +69,8 @@ final class VideoUploadViewModel: ObservableObject {
     // Update selectedTags to be a Set
     @Published private(set) var selectedTags: Set<String> = []
     
+    @Published var metadata: VideoMetadata
+    
     var isValidForm: Bool {
         !title.isEmpty && selectedVideoURL != nil
     }
@@ -85,6 +87,17 @@ final class VideoUploadViewModel: ObservableObject {
     // MARK: - Initialization
     
     init() {
+        // Initialize metadata with defaults
+        self.metadata = VideoMetadata(
+            id: UUID().uuidString,
+            title: "",
+            description: "",
+            creatorType: .food,
+            group: "",
+            customFieldsJSON: "{}",
+            createdAt: Date(),
+            updatedAt: Date()
+        )
         setupVideoSelection()
     }
     
@@ -280,7 +293,7 @@ final class VideoUploadViewModel: ObservableObject {
                 }
             }
             
-            // 3. Create video document with same videoId and storage path
+            // 3. Create video document with both types of metadata
             _ = try await createVideo(videoId: videoId, storagePath: storagePath, thumbnailURL: thumbnailURL)
             
             uploadComplete = true
@@ -301,19 +314,21 @@ final class VideoUploadViewModel: ObservableObject {
     private func createVideo(videoId: String, storagePath: String, thumbnailURL: String?) async throws -> Video {
         let userId = Auth.auth().currentUser?.uid ?? ""
         
-        // Get the local video URL for metadata extraction
         guard let localVideoURL = selectedVideoURL else {
             throw UploadError.invalidVideo
         }
         
-        let metadata = try await self.extractVideoMetadata(from: localVideoURL)
+        // Get technical metadata from video file
+        let fileMetadata = try await self.extractVideoMetadata(from: localVideoURL)
         
+        // Create video document with both types of metadata
         let video = Video(
-            id: videoId, // Use same videoId passed from upload
+            id: videoId,
             userId: userId,
             title: title,
             description: description.isEmpty ? nil : description,
-            metadata: metadata,
+            metadata: fileMetadata,  // Technical metadata from file
+            creatorMetadata: metadata,  // User-entered metadata from form
             stats: Video.Stats(
                 views: 0,
                 likes: 0,
@@ -321,7 +336,7 @@ final class VideoUploadViewModel: ObservableObject {
                 commentsCount: 0
             ),
             status: .ready,
-            storageUrl: storagePath, // Use storage path passed from upload
+            storageUrl: storagePath,
             thumbnailUrl: thumbnailURL,
             createdAt: Date(),
             updatedAt: Date(),
@@ -468,5 +483,12 @@ final class VideoUploadViewModel: ObservableObject {
     
     func updateTags(_ tags: Set<String>) {
         selectedTags = tags
+    }
+    
+    var selectedTagsBinding: Binding<Set<String>> {
+        Binding(
+            get: { self.selectedTags },
+            set: { self.selectedTags = $0 }
+        )
     }
 } 

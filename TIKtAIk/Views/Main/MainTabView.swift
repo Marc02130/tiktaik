@@ -27,6 +27,7 @@ struct MainTabView: View {
     /// Selected tab index
     @State private var selectedTab = 0
     @State private var refreshTrigger = RefreshTrigger()  // Add only this for VideoEditView
+    @StateObject private var profileViewModel = ProfileViewModel()
     
     var body: some View {
         // Add debug print to check if view is being rendered
@@ -60,6 +61,7 @@ struct MainTabView: View {
             // Upload tab - Direct navigation to VideoUploadView
             NavigationStack {
                 VideoUploadView(refreshTrigger: refreshTrigger)
+                    .environmentObject(profileViewModel)
             }
             .tabItem {
                 Label("Upload", systemImage: "plus.circle.fill")
@@ -75,6 +77,7 @@ struct MainTabView: View {
             }
             .tag(3)
         }
+        .environmentObject(profileViewModel)
         .onAppear {
             #if DEBUG
             print("MainTabView appeared")

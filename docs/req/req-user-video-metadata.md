@@ -13,7 +13,6 @@ struct VideoMetadata {
     let description: String        // Required
     let creatorType: CreatorType   // Required
     let group: String             // Required (genre/subject/cuisine/etc)
-    let tags: [String]            // Optional
     let customFields: [String: Any] // Dynamic fields from Firestore
 }
 ```
@@ -31,14 +30,6 @@ struct VideoMetadata {
 - Add basic metadata
 - Preview before publishing
 - Edit metadata after upload
-
-## Common Video Requirements
-
-### Video Upload
-- **Video Specifications**
-  - Format: MP4, MOV
-  - Resolution: Up to 1080p
-  - Size: Up to 500MB
 
 ## Creator Type Requirements
 

@@ -39,11 +39,23 @@ struct UserProfile: Identifiable, Codable {
     var interests: [String]
     /// Indicates whether the user is a creator
     var isCreator: Bool
+    /// Optional creator type
+    var creatorType: CreatorType?
     
     /// Types of user accounts
     enum UserType: String, Codable, CaseIterable {
         case creator
         case consumer
+    }
+    
+    /// Types of creators
+    enum CreatorType: String, Codable, CaseIterable {
+        case food = "Chef/Food"
+        case fitness = "Fitness"
+        case educational = "Educational"
+        case comedy = "Comedy"
+        case beauty = "Beauty/Makeup"
+        case music = "Music"
     }
     
     /// User statistics
@@ -99,7 +111,7 @@ struct UserProfile: Identifiable, Codable {
     
     /// Creates Firestore data dictionary
     var asDictionary: [String: Any] {
-        [
+        var dict = [
             "id": id,
             "email": email,
             "username": username,
@@ -111,8 +123,10 @@ struct UserProfile: Identifiable, Codable {
             "createdAt": Timestamp(date: createdAt),
             "updatedAt": Timestamp(date: updatedAt),
             "interests": interests,
-            "isCreator": isCreator
+            "isCreator": isCreator,
+            "creatorType": creatorType?.rawValue as Any
         ]
+        return dict
     }
     
     /// Creates UserProfile from Firestore document
@@ -147,7 +161,8 @@ struct UserProfile: Identifiable, Codable {
             createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
             updatedAt: (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date(),
             interests: data["interests"] as? [String] ?? [],
-            isCreator: data["isCreator"] as? Bool ?? false
+            isCreator: data["isCreator"] as? Bool ?? false,
+            creatorType: CreatorType(rawValue: data["creatorType"] as? String ?? "")
         )
     }
 } 

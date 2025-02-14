@@ -1,3 +1,6 @@
+import SwiftUI
+import FirebaseAuth
+
 struct CommentThread: Identifiable, Equatable {
     var comment: Comment
     var replies: [Comment]

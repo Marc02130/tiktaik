@@ -168,4 +168,29 @@ import FirebaseAuth
         
         return comments
     }
+    
+    /// Delete a comment and update related counts
+    func deleteComment(_ comment: Comment) async throws {
+        let batch = db.batch()
+        
+        // Delete the comment document
+        let commentRef = db.collection(Comment.collectionName).document(comment.id)
+        batch.deleteDocument(commentRef)
+        
+        // If this is a reply, update parent's reply count
+        if let parentId = comment.parentId {
+            let parentRef = db.collection(Comment.collectionName).document(parentId)
+            batch.updateData([
+                "replyCount": FieldValue.increment(Int64(-1))
+            ], forDocument: parentRef)
+        }
+        
+        // Update video's total comment count
+        let videoRef = db.collection(Video.collectionName).document(comment.videoId)
+        batch.updateData([
+            "stats.commentsCount": FieldValue.increment(Int64(-1))
+        ], forDocument: videoRef)
+        
+        try await batch.commit()
+    }
 } 
