@@ -24,6 +24,7 @@ import AVKit
 /// - Preview video content
 struct VideoEditView: View {
     @StateObject var viewModel: VideoEditViewModel
+    @EnvironmentObject private var profileViewModel: ProfileViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showTagSelection = false
     @State private var showTrimView = false
@@ -61,6 +62,7 @@ struct VideoEditView: View {
 // Renamed from ContentView to MainContent to avoid conflict
 private struct MainContent: View {
     @ObservedObject var viewModel: VideoEditViewModel
+    @EnvironmentObject private var profileViewModel: ProfileViewModel
     @Binding var isPlaying: Bool
     @Binding var isMuted: Bool
     @Binding var showTagSelection: Bool
@@ -75,23 +77,21 @@ private struct MainContent: View {
     @Binding var showMetadataForm: Bool
     
     var body: some View {
-        Group {
-            if viewModel.isLoading {
-                ProgressView("Loading video details...")
-            } else {
-                FormContent(
-                    viewModel: viewModel,
-                    isPlaying: $isPlaying,
-                    isMuted: $isMuted,
-                    showTagSelection: $showTagSelection,
-                    showTrimView: $showTrimView,
-                    showCropView: $showCropView,
-                    showThumbnailView: $showThumbnailView,
-                    showSubtitleEditor: $showSubtitleEditor,
-                    showMetadataForm: $showMetadataForm
-                )
-            }
-        }
+        FormContent(
+            viewModel: viewModel,
+            isPlaying: $isPlaying,
+            isMuted: $isMuted,
+            showTagSelection: $showTagSelection,
+            showTrimView: $showTrimView,
+            showCropView: $showCropView,
+            showThumbnailView: $showThumbnailView,
+            showSubtitleEditor: $showSubtitleEditor,
+            showError: $showError,
+            errorMessage: $errorMessage,
+            subtitles: $subtitles,
+            dismiss: dismiss,
+            showMetadataForm: $showMetadataForm
+        )
         .navigationTitle("Edit Video")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -109,11 +109,12 @@ private struct MainContent: View {
                 Text(message)
             }
         }
+        .sheet(isPresented: $showMetadataForm) {
+            VideoMetadataForm(usermetadata: $viewModel.usermetadata)
+                .environmentObject(profileViewModel)
+        }
         .sheet(isPresented: $showTagSelection) {
             TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
-        }
-        .sheet(isPresented: $showMetadataForm) {
-            VideoMetadataForm(metadata: $viewModel.metadata)
         }
         .sheet(isPresented: $showTrimView) {
             if let url = viewModel.videoURL {
@@ -199,6 +200,10 @@ private struct FormContent: View {
     @Binding var showCropView: Bool
     @Binding var showThumbnailView: Bool
     @Binding var showSubtitleEditor: Bool
+    @Binding var showError: Bool
+    @Binding var errorMessage: String?
+    @Binding var subtitles: [VideoSubtitle]
+    let dismiss: DismissAction
     @Binding var showMetadataForm: Bool
     
     var body: some View {
@@ -214,15 +219,9 @@ private struct FormContent: View {
                     HStack {
                         Text("Metadata")
                         Spacer()
-                        Text(viewModel.metadata.customFields.isEmpty ? "Add details" : "\(viewModel.metadata.customFields.count) fields")
+                        Text(viewModel.usermetadata.customFields.isEmpty ? "Add details" : "\(viewModel.usermetadata.customFields.count) fields")
                             .foregroundStyle(.secondary)
                     }
-                }
-            }
-            .onChange(of: viewModel.metadata) { _, newValue in
-                // Handle metadata changes synchronously
-                Task {
-                    try? await viewModel.saveChanges()
                 }
             }
             EditVideoSection(
@@ -232,6 +231,11 @@ private struct FormContent: View {
                 showThumbnailView: $showThumbnailView,
                 showSubtitleEditor: $showSubtitleEditor
             )
+        }
+        .onChange(of: viewModel.usermetadata) { _, newValue in
+            Task {
+                try? await viewModel.saveChanges()
+            }
         }
     }
 }

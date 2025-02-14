@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct VideoMetadataForm: View {
-    @Binding var metadata: VideoMetadata
+    @Binding var usermetadata: UserVideoMetadata
     @EnvironmentObject private var profileViewModel: ProfileViewModel
     @State private var showMetadataSelection = false
     @State private var showAddField = false
@@ -10,31 +10,35 @@ struct VideoMetadataForm: View {
     
     var body: some View {
         Form {
-            Section("Group/Category") {
+            Section("Video Type") {
                 if let profile = profileViewModel.userProfile {
-                    Text("Your creator type: \(profile.creatorType?.rawValue ?? "Not set")")
+                    Text("Your creator type: \(profile.creatorType?.rawValue ?? "Other")")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 
-                Picker("Video Type", selection: $metadata.creatorType) {
-                    ForEach(VideoMetadata.CreatorType.allCases, id: \.self) { type in
+                Picker("Video Type", selection: $usermetadata.creatorType) {
+                    ForEach(UserVideoMetadata.CreatorType.allCases, id: \.self) { type in
                         Text(type.rawValue)
                             .tag(type)
                     }
                 }
             }
             
+            Section("VideoGroup") {
+                TextField("Group", text: $usermetadata.group)
+            }
+            
             Section("Custom Fields") {
-                ForEach(Array(metadata.customFields.keys), id: \.self) { key in
+                ForEach(Array(usermetadata.customFields.keys), id: \.self) { key in
                     HStack {
                         TextField(key, text: Binding(
-                            get: { metadata.customFields[key] ?? "" },
-                            set: { metadata.customFields[key] = $0 }
+                            get: { usermetadata.customFields[key] ?? "" },
+                            set: { usermetadata.customFields[key] = $0 }
                         ))
                         
                         Button(role: .destructive) {
-                            metadata.customFields.removeValue(forKey: key)
+                            usermetadata.customFields.removeValue(forKey: key)
                         } label: {
                             Image(systemName: "minus.circle.fill")
                         }
@@ -49,8 +53,8 @@ struct VideoMetadataForm: View {
         .onAppear {
             // Debug print to verify metadata is loaded
             #if DEBUG
-            print("VideoMetadataForm appeared with metadata:", metadata)
-            print("Custom fields:", metadata.customFields)
+            print("UserVideoMetadataForm appeared with metadata:", usermetadata)
+            print("Custom fields:", usermetadata.customFields)
             #endif
         }
         .sheet(isPresented: $showAddField) {
@@ -69,7 +73,7 @@ struct VideoMetadataForm: View {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Add") {
                             if !newFieldKey.isEmpty {
-                                metadata.customFields[newFieldKey] = newFieldValue
+                                usermetadata.customFields[newFieldKey] = newFieldValue
                                 newFieldKey = ""
                                 newFieldValue = ""
                                 showAddField = false

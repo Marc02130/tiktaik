@@ -1,6 +1,6 @@
 import Foundation
 
-struct VideoMetadata: Codable, Equatable {
+struct UserVideoMetadata: Codable, Equatable {
     let id: String
     var title: String              // Required
     var description: String        // Required
@@ -11,6 +11,7 @@ struct VideoMetadata: Codable, Equatable {
     let updatedAt: Date
     
     enum CreatorType: String, Codable, CaseIterable {
+        case other = "Other"
         case food = "Chef/Food"
         case fitness = "Fitness"
         case educational = "Educational"

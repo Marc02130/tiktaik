@@ -88,7 +88,7 @@ final class VideoEditViewModel: ObservableObject {
     // Add save state
     @Published private(set) var isSavingSubtitles = false
     
-    @Published var metadata: VideoMetadata
+    @Published var usermetadata: UserVideoMetadata
     
     /// Initializes view model with video ID
     /// - Parameter videoId: Unique identifier of video to edit
@@ -101,7 +101,7 @@ final class VideoEditViewModel: ObservableObject {
         self.video = video
         
         // Initialize metadata with defaults
-        self.metadata = VideoMetadata(
+        self.usermetadata = UserVideoMetadata(
             id: videoId,
             title: video.title,
             description: video.description ?? "",
@@ -143,11 +143,11 @@ final class VideoEditViewModel: ObservableObject {
                 .getDocument() {
                 
                 if let data = metadataData.data() {
-                    self.metadata = VideoMetadata(
+                    self.usermetadata = UserVideoMetadata(
                         id: self.videoId,
                         title: self.title,
                         description: self.description,
-                        creatorType: VideoMetadata.CreatorType(rawValue: data["creatorType"] as? String ?? "") ?? .food,
+                        creatorType: UserVideoMetadata.CreatorType(rawValue: data["creatorType"] as? String ?? "") ?? .food,
                         group: data["group"] as? String ?? "",
                         customFieldsJSON: data["customFields"] as? String ?? "{}",
                         createdAt: self.video.createdAt,
@@ -342,9 +342,9 @@ final class VideoEditViewModel: ObservableObject {
             
             // Save creator metadata
             let creatorMetadata: [String: Any] = [
-                "creatorType": metadata.creatorType.rawValue,
-                "group": metadata.group,
-                "customFields": metadata.customFieldsJSON
+                "creatorType": usermetadata.creatorType.rawValue,
+                "group": usermetadata.group,
+                "customFields": usermetadata.customFieldsJSON
             ]
             
             // If video was edited (trimmed/cropped), handle video changes

@@ -69,7 +69,17 @@ final class VideoUploadViewModel: ObservableObject {
     // Update selectedTags to be a Set
     @Published private(set) var selectedTags: Set<String> = []
     
-    @Published var metadata: VideoMetadata
+    @Published var metadata: Video.VideoMetadata  // For technical video metadata
+    @Published var usermetadata = UserVideoMetadata(
+        id: UUID().uuidString,
+        title: "",
+        description: "",
+        creatorType: .other,
+        group: "",
+        customFieldsJSON: "{}",
+        createdAt: Date(),
+        updatedAt: Date()
+    )  // For user-entered metadata
     
     var isValidForm: Bool {
         !title.isEmpty && selectedVideoURL != nil
@@ -87,16 +97,16 @@ final class VideoUploadViewModel: ObservableObject {
     // MARK: - Initialization
     
     init() {
-        // Initialize metadata with defaults
-        self.metadata = VideoMetadata(
-            id: UUID().uuidString,
-            title: "",
-            description: "",
-            creatorType: .food,
-            group: "",
-            customFieldsJSON: "{}",
-            createdAt: Date(),
-            updatedAt: Date()
+        // Initialize metadata with empty technical metadata
+        self.metadata = Video.VideoMetadata(
+            duration: 0,
+            width: 0,
+            height: 0,
+            size: 0,
+            format: nil,
+            resolution: nil,
+            uploadDate: nil,
+            lastModified: nil
         )
         setupVideoSelection()
     }
@@ -321,14 +331,13 @@ final class VideoUploadViewModel: ObservableObject {
         // Get technical metadata from video file
         let fileMetadata = try await self.extractVideoMetadata(from: localVideoURL)
         
-        // Create video document with both types of metadata
+        // 1. Create and save video document with technical metadata
         let video = Video(
             id: videoId,
             userId: userId,
             title: title,
             description: description.isEmpty ? nil : description,
-            metadata: fileMetadata,  // Technical metadata from file
-            creatorMetadata: metadata,  // User-entered metadata from form
+            metadata: fileMetadata,  // Technical metadata only
             stats: Video.Stats(
                 views: 0,
                 likes: 0,
@@ -349,6 +358,20 @@ final class VideoUploadViewModel: ObservableObject {
             .collection(Video.collectionName)
             .document(videoId)
             .setData(video.asDictionary)
+        
+        // Save creator metadata to subcollection like VideoEditViewModel
+        let creatorMetadata: [String: Any] = [
+            "creatorType": usermetadata.creatorType.rawValue,
+            "customFields": usermetadata.customFieldsJSON,
+            "group": usermetadata.group
+        ]
+        
+        try await Firestore.firestore()
+            .collection(Video.collectionName)  // videos collection
+            .document(videoId)
+            .collection("metadata")  // metadata subcollection
+            .document("creator")     // creator document
+            .setData(creatorMetadata)
         
         return video
     }

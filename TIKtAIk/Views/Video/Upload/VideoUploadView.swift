@@ -83,7 +83,7 @@ struct VideoUploadView: View {
                             HStack {
                                 Text("Metadata")
                                 Spacer()
-                                Text(viewModel.metadata.customFields.isEmpty ? "Add details" : "\(viewModel.metadata.customFields.count) fields")
+                                Text(viewModel.usermetadata.customFields.isEmpty ? "Add details" : "\(viewModel.usermetadata.customFields.count) fields")
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -113,7 +113,7 @@ struct VideoUploadView: View {
                 TagSelectionView(selectedTags: viewModel.selectedTagsBinding)
             }
             .sheet(isPresented: $showMetadataForm) {
-                VideoMetadataForm(metadata: $viewModel.metadata)
+                VideoMetadataForm(usermetadata: $viewModel.usermetadata)
                     .environmentObject(profileViewModel)
             }
         }
