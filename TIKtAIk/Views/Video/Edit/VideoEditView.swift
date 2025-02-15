@@ -211,6 +211,13 @@ private struct FormContent: View {
             VideoPreviewSection(viewModel: viewModel, isPlaying: $isPlaying, isMuted: $isMuted)
             VideoDetailsSection(viewModel: viewModel)
             PrivacySection(viewModel: viewModel)
+            
+            // Add Comment Analysis Section if comments are enabled
+            if viewModel.allowComments {
+                CommentAnalysisSection(videoId: viewModel.videoId)
+                    .environmentObject(viewModel)  // Pass viewModel for coordination
+            }
+            
             TagsSection(viewModel: viewModel, showTagSelection: $showTagSelection)
             Section("Additional Details") {
                 Button {

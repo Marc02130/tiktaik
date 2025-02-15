@@ -86,7 +86,8 @@ import FirebaseAuth
             likesCount: 0,
             replyCount: 0,
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            analyzed: false
         )
         
         batch.setData(comment.asDictionary, forDocument: commentRef)
@@ -123,7 +124,8 @@ import FirebaseAuth
             likesCount: 0,
             replyCount: 0,
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            analyzed: false
         )
         
         batch.setData(reply.asDictionary, forDocument: replyRef)
@@ -193,4 +195,4 @@ import FirebaseAuth
         
         try await batch.commit()
     }
-} 
+}

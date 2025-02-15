@@ -25,14 +25,27 @@ struct VideoMetadataForm: View {
                 }
             }
             
-            Section("VideoGroup") {
+            Section("Video Group") {
                 TextField("Group", text: $usermetadata.group)
             }
-            
+
             Section("Custom Fields") {
                 ForEach(Array(usermetadata.customFields.keys), id: \.self) { key in
                     HStack {
                         TextField(key, text: Binding(
+                            get: { key },
+                            set: { newKey in
+                                if newKey != key {
+                                    // Save the old value
+                                    let value = usermetadata.customFields[key] ?? ""
+                                    // Remove old key
+                                    usermetadata.customFields.removeValue(forKey: key)
+                                    // Add new key with old value
+                                    usermetadata.customFields[newKey] = value
+                                }
+                            }
+                        ))
+                        TextField("Value", text: Binding(
                             get: { usermetadata.customFields[key] ?? "" },
                             set: { usermetadata.customFields[key] = $0 }
                         ))

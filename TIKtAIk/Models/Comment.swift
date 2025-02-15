@@ -33,6 +33,8 @@ struct Comment: Identifiable, Codable, Equatable {
     let createdAt: Date
     /// Last update timestamp
     var updatedAt: Date
+    /// Analysis status
+    var analyzed: Bool = false
     
     /// Firestore collection name
     static let collectionName = "videoComments"
@@ -48,7 +50,8 @@ struct Comment: Identifiable, Codable, Equatable {
             "likesCount": likesCount,
             "replyCount": replyCount,
             "createdAt": Timestamp(date: createdAt),
-            "updatedAt": Timestamp(date: updatedAt)
+            "updatedAt": Timestamp(date: updatedAt),
+            "analyzed": analyzed
         ]
         return dict
     }
@@ -62,7 +65,8 @@ struct Comment: Identifiable, Codable, Equatable {
         likesCount: Int,
         replyCount: Int,
         createdAt: Date,
-        updatedAt: Date
+        updatedAt: Date,
+        analyzed: Bool = false
     ) {
         self.id = id
         self.userId = userId
@@ -73,6 +77,7 @@ struct Comment: Identifiable, Codable, Equatable {
         self.replyCount = replyCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.analyzed = analyzed
     }
     
     static func from(_ document: QueryDocumentSnapshot) throws -> Comment {
@@ -89,6 +94,9 @@ struct Comment: Identifiable, Codable, Equatable {
             throw CommentError.invalidData
         }
         
+        // Use false as default for existing comments without analyzed field
+        let analyzed = data["analyzed"] as? Bool ?? false
+        
         return Comment(
             id: document.documentID,
             userId: userId,
@@ -98,7 +106,8 @@ struct Comment: Identifiable, Codable, Equatable {
             likesCount: likesCount,
             replyCount: replyCount,
             createdAt: createdTimestamp.dateValue(),
-            updatedAt: updatedTimestamp.dateValue()
+            updatedAt: updatedTimestamp.dateValue(),
+            analyzed: analyzed
         )
     }
     
@@ -111,7 +120,8 @@ struct Comment: Identifiable, Codable, Equatable {
         lhs.likesCount == rhs.likesCount &&
         lhs.replyCount == rhs.replyCount &&
         lhs.createdAt == rhs.createdAt &&
-        lhs.updatedAt == rhs.updatedAt
+        lhs.updatedAt == rhs.updatedAt &&
+        lhs.analyzed == rhs.analyzed
     }
 }
 
